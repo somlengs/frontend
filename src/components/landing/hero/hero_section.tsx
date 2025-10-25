@@ -3,6 +3,7 @@
 import React from 'react'
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave'
 import { Button } from '@/components/ui/liquid-glass-button'
+import { BrushUnderline } from '@/components/ui/brush-underline'
 import Link from 'next/link'
 
 export default function HeroSection() {
@@ -30,7 +31,7 @@ export default function HeroSection() {
         {/* Description */}
         <div className="text-center mb-6">
           <p className="text-md md:text-md text-text max-w-lg mx-auto font-semibold">
-            Somleng helps researchers prepare their speech datasets faster. Upload your audio, Somleng process the transcription and prepare your dataset for export. You edit the transcriptions and export.
+            Somleng helps researchers prepare their speech datasets <BrushUnderline variant="accent" animated>4x faster</BrushUnderline> than typing. Upload your audio, Somleng process the transcription and prepare your dataset for export. You edit the transcriptions and export.
           </p>
         </div>
 
@@ -41,7 +42,7 @@ export default function HeroSection() {
             size="lg"
             className="bg-accent text-text hover:bg-accent/90 transition-colors"
           >
-            <Link href="#" className="group relative">
+            <Link href="/signup" className="group relative">
               <span className="group-hover:hidden flex items-center gap-2">
                 Get Started
               </span>

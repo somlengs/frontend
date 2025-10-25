@@ -1,0 +1,161 @@
+'use client'
+
+import React, { useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
+import { 
+  FolderOpen, 
+  Upload, 
+  FileText, 
+  Settings, 
+  LogOut,
+  Menu,
+  X,
+  Plus
+} from 'lucide-react'
+import { Button } from '@/components/ui/liquid-glass-button'
+import { TextShimmerWave } from '@/components/ui/text-shimmer-wave'
+
+const navigation = [
+  { name: 'Projects', href: '/dashboard', icon: FolderOpen },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+]
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const pathname = usePathname()
+
+  return (
+    <div className="h-screen bg-bg overflow-hidden">
+      {/* Mobile sidebar */}
+      <div className={cn(
+        "fixed inset-0 z-50 lg:hidden",
+        sidebarOpen ? "block" : "hidden"
+      )}>
+        <div className="fixed inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-y-0 left-0 w-64">
+          <div className="flex items-center justify-between p-4">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <img src="/logo.png" alt="Somleng" className="w-8 h-8 border rounded-md" />
+              <span className="font-semibold text-lg text-text">Somleng</span>
+            </Link>
+            <button onClick={() => setSidebarOpen(false)}>
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <nav className="p-4 space-y-2">
+            {navigation.map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-md transition-colors font-bold",
+                      isActive 
+                        ? "bg-muted text-foreground" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    )}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {item.name}
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* Desktop sidebar */}
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto">
+          <div className="flex h-16 shrink-0 items-center px-6">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <img src="/logo.png" alt="Somleng" className="w-8 h-8 border rounded-md" />
+              <span className="font-semibold text-lg text-text">Somleng</span>
+            </Link>
+          </div>
+          <nav className="flex flex-1 flex-col px-6 pb-4">
+            <ul role="list" className="flex flex-1 flex-col gap-y-2">
+              {navigation.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "group flex gap-x-3 rounded-md px-3 py-2 text-sm leading-6 transition-colors",
+                        isActive 
+                          ? "bg-muted text-foreground" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      )}
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      {item.name}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+            <div className="mt-auto pt-4 border-t border-border">
+              <Button
+                size="sm"
+                className="w-full"
+                asChild
+              >
+                <Link href="/signin" className="flex items-center gap-2">
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </Link>
+              </Button>
+            </div>
+          </nav>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="lg:pl-64 bg-muted/30">
+        {/* Top bar */}
+        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 px-4 sm:gap-x-6 sm:px-6 lg:px-8">
+          <button
+            type="button"
+            className="-m-2.5 p-2.5 text-text lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+
+          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+            <div className="flex flex-1"></div>
+            <div className="flex items-center gap-x-4 lg:gap-x-6">
+              <Button
+                size="sm"
+                className="bg-text text-bg hover:bg-text/90"
+                asChild
+              >
+                <Link href="/dashboard/projects/new" className="flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  New Project
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Page content with rounded borders */}
+        <main className="bg-bg border border-border rounded-md h-[calc(100vh-6rem)] m-4 overflow-hidden">
+          <div className="h-full overflow-y-auto">
+            <div className="px-6 sm:px-8 lg:px-12 py-6 w-full max-w-4xl mx-auto">
+              {children}
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}

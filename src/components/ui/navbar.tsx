@@ -90,7 +90,7 @@ export const Header = () => {
                                     variant="outline"
                                     size="default"
                                     className={cn(isScrolled && 'lg:hidden')}>
-                                    <Link href="#" className="group relative">
+                                    <Link href="/signin" className="group relative">
                                         <span className="group-hover:hidden">Login</span>
                                         <span className="hidden group-hover:inline-block">
                                             <TextShimmerWave 
@@ -106,7 +106,7 @@ export const Header = () => {
                                     asChild
                                     size="default"
                                     className={`${cn(isScrolled && 'lg:hidden')} bg-accent text-text`}>
-                                    <Link href="#" className="group relative">
+                                    <Link href="/signup" className="group relative">
                                         <span className="group-hover:hidden">Sign Up</span>
                                         <span className="hidden group-hover:inline-block">
                                             <TextShimmerWave 
@@ -120,9 +120,26 @@ export const Header = () => {
                                 </Button>
                                 <Button
                                     asChild
+                                    variant="outline"
+                                    size="default"
+                                    className={cn(isScrolled && 'lg:hidden')}>
+                                    <Link href="/dashboard" className="group relative">
+                                        <span className="group-hover:hidden">Dashboard</span>
+                                        <span className="hidden group-hover:inline-block">
+                                            <TextShimmerWave 
+                                                waveOnly={true}
+                                                fontSize="1.1rem"
+                                            >
+                                                Dashboard
+                                            </TextShimmerWave>
+                                        </span>
+                                    </Link>
+                                </Button>
+                                <Button
+                                    asChild
                                     size="default"
                                     className={cn(isScrolled ? 'lg:inline-flex' : 'hidden')}>
-                                    <Link href="#" className="group relative">
+                                    <Link href="/signup" className="group relative">
                                         <span className="group-hover:hidden">Get Started</span>
                                         <span className="hidden group-hover:inline-block">
                                             <TextShimmerWave 
