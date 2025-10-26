@@ -1,21 +1,20 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 import { 
   FolderOpen, 
-  Upload, 
-  FileText, 
   Settings, 
   LogOut,
   Menu,
   X,
-  Plus
+  Plus,
+  User
 } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
-import { TextShimmerWave } from '@/components/ui/text-shimmer-wave'
 
 const navigation = [
   { name: 'Projects', href: '/dashboard', icon: FolderOpen },
@@ -28,7 +27,28 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [user, setUser] = useState<{ email?: string; user_metadata?: { first_name?: string; last_name?: string } } | null>(null)
   const pathname = usePathname()
+  const router = useRouter()
+
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    getUser()
+  }, [])
+
+  const handleSignOut = async () => {
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      router.push('/signin')
+    } catch (error) {
+      console.error('Sign out failed:', error)
+    }
+  }
 
   return (
     <div className="h-screen bg-bg overflow-hidden">
@@ -103,15 +123,35 @@ export default function DashboardLayout({
               })}
             </ul>
             <div className="mt-auto pt-4 border-t border-border">
+              {/* User Info */}
+              {user && (
+                <div className="mb-4 px-3 py-2 bg-muted/50 rounded-md">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-text text-bg rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {user.user_metadata?.first_name && user.user_metadata?.last_name 
+                          ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
+                          : user.user_metadata?.first_name || user.email?.split('@')[0]
+                        }
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <Button
                 size="sm"
                 className="w-full"
-                asChild
+                onClick={handleSignOut}
               >
-                <Link href="/signin" className="flex items-center gap-2">
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
-                </Link>
+                <LogOut className="w-4 h-4" />
+                Sign Out
               </Button>
             </div>
           </nav>

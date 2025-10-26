@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { CheckCircle, Clock, AlertCircle, FileText, Trash2, Edit, Copy } from 'lucide-react'
+import { CheckCircle, Clock, AlertCircle, FileText, Trash2, Edit } from 'lucide-react'
 import { Button } from './liquid-glass-button'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
@@ -78,7 +78,7 @@ export function ProjectsTable({
             </tr>
           </thead>
           <tbody>
-            {projects.map((project, index) => {
+            {projects.map((project) => {
               const status = statusConfig[project.status as keyof typeof statusConfig]
               const StatusIcon = status.icon
               

@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { CheckCircle, Clock, AlertCircle, Edit, Download, Trash2 } from 'lucide-react'
 import { Button } from './liquid-glass-button'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
@@ -48,6 +48,12 @@ export function AudioFilesTable({
   stickyHeader = false,
   maxHeight = '500px'
 }: AudioFilesTableProps) {
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
   const actions = [
     {
       label: 'Edit Transcription',
@@ -71,10 +77,15 @@ export function AudioFilesTable({
 
   return (
     <div className="bg-bg border border-border rounded-lg overflow-hidden">
-      <div 
-        className="overflow-x-auto overflow-y-auto custom-scrollbar"
-        style={{ maxHeight }}
-      >
+      {!isClient ? (
+        <div className="p-8 text-center text-muted-foreground">
+          Loading...
+        </div>
+      ) : (
+        <div 
+          className="overflow-x-auto overflow-y-auto custom-scrollbar"
+          style={{ maxHeight }}
+        >
         <table className="w-full caption-bottom text-sm">
           <thead className={stickyHeader ? 'sticky top-0 z-10 bg-text' : 'bg-text'}>
             <tr>
@@ -151,7 +162,8 @@ export function AudioFilesTable({
             })}
           </tbody>
         </table>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
