@@ -1,8 +1,11 @@
 'use client'
 
 import React from 'react'
-import { CheckCircle, Clock, AlertCircle, FileText, Trash2, Edit } from 'lucide-react'
+import { CheckCircle, Clock, AlertCircle, FileText, Trash2, Edit, FolderOpen } from 'lucide-react'
 import { Button } from './liquid-glass-button'
+import { Doodle } from './doodle'
+import { GooeyLoader } from './gooey-loader'
+import { EmptyState } from './empty-state'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
 export interface Project {
@@ -43,104 +46,155 @@ interface ProjectsTableProps {
   projects: Project[]
   onProjectClick?: (project: Project) => void
   onActionClick?: (action: string, project: Project) => void
+  emptyTitle?: string
+  emptyDescription?: string
+  emptyActionLabel?: string
+  onEmptyAction?: () => void
+  loading?: boolean
 }
 
 export function ProjectsTable({ 
   projects, 
   onProjectClick, 
-  onActionClick
+  onActionClick,
+  emptyTitle = 'No projects yet',
+  emptyDescription = 'Create your first project to start managing datasets and transcriptions.',
+  emptyActionLabel = 'Create Project',
+  onEmptyAction,
+  loading = false
 }: ProjectsTableProps) {
   const actions = [
     {
       label: 'Edit Project',
-      icon: <Edit className="w-4 h-4" />,
+      icon: <Edit className="w-4 h-4" />, 
       onClick: (project: Project) => onActionClick?.('edit', project)
     },
     {
       label: 'Delete',
-      icon: <Trash2 className="w-4 h-4" />,
+      icon: <Trash2 className="w-4 h-4" />, 
       onClick: (project: Project) => onActionClick?.('delete', project),
       className: 'text-red-600 hover:bg-red-50'
     }
   ]
 
+  const isEmpty = projects.length === 0
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center w-full min-h-[60vh]">
+        <GooeyLoader
+          primaryColor="var(--color-accent)"
+          secondaryColor="var(--accent-foreground)"
+          borderColor="var(--border)"
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="bg-bg border border-border rounded-lg overflow-hidden">
-      <div className="overflow-x-auto custom-scrollbar">
-        <table className="w-full caption-bottom text-sm">
-          <thead className="bg-text">
-            <tr>
-              <th className="text-left py-3 px-4 text-sm font-medium text-bg">Project</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-bg">Status</th>
-              <th className="text-right py-3 px-4 text-sm font-medium text-bg">Files</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-bg">Created</th>
-              <th className="text-right py-3 px-4 text-sm font-medium text-bg">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {projects.map((project) => {
-              const status = statusConfig[project.status as keyof typeof statusConfig]
-              const StatusIcon = status.icon
-              
-              return (
-                <tr 
-                  key={project.id}
-                  className="cursor-pointer group hover:bg-muted/50 border-b transition-colors"
-                  onClick={() => onProjectClick?.(project)}
-                >
-                  <td className="py-3 px-4">
-                    <div>
-                      <div className="text-md font-medium text-text  ">{project.name}</div>
-                      <div className="text-xs text-muted-foreground">{project.description}</div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${status.color}`}>
-                      <StatusIcon className="h-3 w-3" />
-                      {status.label}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right text-sm text-text">{project.audioFiles}</td>
-                  <td className="py-3 px-4 text-sm text-text">{project.createdAt}</td>
-                  <td className="py-3 px-4 text-right">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                          </svg>
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-48 p-0 bg-bg border-border" align="end" side="bottom" sideOffset={4}>
-                        <div className="py-1">
-                          {actions.map((action, actionIndex) => (
-                            <button
-                              key={actionIndex}
-                              className={`w-full px-4 py-2 text-left text-sm hover:bg-muted/50 flex items-center gap-2 ${action.className || 'text-text'}`}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                action.onClick(project)
-                              }}
-                            >
-                              {action.icon}
-                              {action.label}
-                            </button>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+      {isEmpty ? (
+        <EmptyState
+          title={emptyTitle}
+          description={emptyDescription}
+          icons={[FolderOpen, FileText, Edit]}
+          action={onEmptyAction ? { label: (
+            <span className="inline-flex items-center gap-2"><FolderOpen className="w-4 h-4" />{emptyActionLabel}</span>
+          ), onClick: onEmptyAction } : undefined}
+        />
+      ) : (
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full caption-bottom text-sm">
+            <thead className="bg-text">
+              <tr>
+                <th className="text-left py-3 px-4 text-sm font-medium text-bg">Project</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-bg">Status</th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-bg">Files</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-bg">Created</th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-bg">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projects.map((project) => {
+                const status = statusConfig[project.status as keyof typeof statusConfig]
+                const StatusIcon = status.icon
+                return (
+                  <tr 
+                    key={project.id}
+                    className="cursor-pointer group hover:bg-muted/50 border-b transition-colors"
+                    onClick={() => onProjectClick?.(project)}
+                  >
+                    <td className="py-3 px-4">
+                      <div>
+                        <div className="text-md font-medium text-text  ">{project.name}</div>
+                        <div className="text-xs text-muted-foreground">{project.description}</div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center gap-1.5 ${project.status === 'processing' ? 'px-0 py-0 border-0 bg-transparent' : 'px-2 py-1 rounded-full text-xs font-medium border ' + status.color}`}>
+                        {project.status === 'processing' ? (
+                          <>
+                            <div className="relative w-32 h-7 overflow-hidden">
+                              <div className="absolute left-2 top-1/2 -translate-y-1/2 scale-[0.5] origin-left">
+                                <GooeyLoader
+                                  primaryColor="#6EA8FE"
+                                  secondaryColor="#CFE0FF"
+                                  borderColor="#DBEAFE"
+                                />
+                              </div>
+                            </div>
+                            <span className="sr-only">{status.label}</span>
+                          </>
+                        ) : (
+                          <>
+                            <StatusIcon className="h-3 w-3 shrink-0" />
+                            {status.label}
+                          </>
+                        )}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right text-sm text-text">{project.audioFiles}</td>
+                    <td className="py-3 px-4 text-sm text-text">{project.createdAt}</td>
+                    <td className="py-3 px-4 text-right">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                            </svg>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-0 bg-bg border-border" align="end" side="bottom" sideOffset={4}>
+                          <div className="py-1">
+                            {actions.map((action, actionIndex) => (
+                              <button
+                                key={actionIndex}
+                                className={`w-full px-4 py-2 text-left text-sm hover:bg-muted/50 flex items-center gap-2 ${action.className || 'text-text'}`}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  action.onClick(project)
+                                }}
+                              >
+                                {action.icon}
+                                {action.label}
+                              </button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

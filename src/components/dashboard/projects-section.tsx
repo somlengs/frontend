@@ -9,13 +9,16 @@ import {
   Grid3X3,
   List,
   Search,
-  Filter
+  Filter,
+  FolderOpen
 } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { BrushUnderline } from '@/components/ui/brush-underline'
 import { ProjectsTable, Project } from '@/components/ui/projects-table'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Doodle } from '@/components/ui/doodle'
+import { GooeyLoader } from '@/components/ui/gooey-loader'
 
 // Mock data - replace with real data from your API
 const mockProjects = [
@@ -70,6 +73,16 @@ export default function ProjectsSection() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
+  React.useEffect(() => {
+    setLoading(true);
+    const t = setTimeout(() => setLoading(false), 5000)
+    return () => clearTimeout(t)
+  }, [])
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Filter projects based on search and status
   const filteredProjects = projects.filter(project => {
@@ -105,60 +118,62 @@ export default function ProjectsSection() {
                 className="pl-10 w-80 focus:ring-0 focus:ring-offset-0 focus:outline-none focus:border-border focus:shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none focus-visible:border-border focus-visible:shadow-none"
               />
             </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className="p-2 rounded-md transition-colors border border-dashed text-muted-foreground hover:text-text border-muted-foreground/30 hover:border-muted-foreground/50">
-                  <Filter className="w-4 h-4" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 p-0 bg-bg border-border" align="end" side="bottom" sideOffset={4}>
-                <div className="p-4">
-                  <h3 className="text-sm font-medium text-text mb-3">Filter by Status</h3>
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => setFilterStatus(null)}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        filterStatus === null 
-                          ? 'bg-muted text-text' 
-                          : 'text-muted-foreground hover:text-text hover:bg-muted/50'
-                      }`}
-                    >
-                      All Projects
-                    </button>
-                    <button
-                      onClick={() => setFilterStatus('processing')}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        filterStatus === 'processing' 
-                          ? 'bg-muted text-text' 
-                          : 'text-muted-foreground hover:text-text hover:bg-muted/50'
-                      }`}
-                    >
-                      Processing
-                    </button>
-                    <button
-                      onClick={() => setFilterStatus('completed')}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        filterStatus === 'completed' 
-                          ? 'bg-muted text-text' 
-                          : 'text-muted-foreground hover:text-text hover:bg-muted/50'
-                      }`}
-                    >
-                      Completed
-                    </button>
-                    <button
-                      onClick={() => setFilterStatus('draft')}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        filterStatus === 'draft' 
-                          ? 'bg-muted text-text' 
-                          : 'text-muted-foreground hover:text-text hover:bg-muted/50'
-                      }`}
-                    >
-                      Draft
-                    </button>
+            {mounted && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="p-2 rounded-md transition-colors border border-dashed text-muted-foreground hover:text-text border-muted-foreground/30 hover:border-muted-foreground/50">
+                    <Filter className="w-4 h-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-0 bg-bg border-border" align="end" side="bottom" sideOffset={4}>
+                  <div className="p-4">
+                    <h3 className="text-sm font-medium text-text mb-3">Filter by Status</h3>
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => setFilterStatus(null)}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                          filterStatus === null 
+                            ? 'bg-muted text-text' 
+                            : 'text-muted-foreground hover:text-text hover:bg-muted/50'
+                        }`}
+                      >
+                        All Projects
+                      </button>
+                      <button
+                        onClick={() => setFilterStatus('processing')}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                          filterStatus === 'processing' 
+                            ? 'bg-muted text-text' 
+                            : 'text-muted-foreground hover:text-text hover:bg-muted/50'
+                        }`}
+                      >
+                        Processing
+                      </button>
+                      <button
+                        onClick={() => setFilterStatus('completed')}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                          filterStatus === 'completed' 
+                            ? 'bg-muted text-text' 
+                            : 'text-muted-foreground hover:text-text hover:bg-muted/50'
+                        }`}
+                      >
+                        Completed
+                      </button>
+                      <button
+                        onClick={() => setFilterStatus('draft')}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                          filterStatus === 'draft' 
+                            ? 'bg-muted text-text' 
+                            : 'text-muted-foreground hover:text-text hover:bg-muted/50'
+                        }`}
+                      >
+                        Draft
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center bg-muted/30 rounded-lg p-1">
@@ -188,7 +203,8 @@ export default function ProjectsSection() {
               className="bg-text text-bg hover:bg-text/90"
               asChild
             >
-              <Link href="/dashboard/projects/new">
+              <Link href="/dashboard/projects/new" className="flex items-center gap-2">
+                <FolderOpen className="w-4 h-4" />
                 Create Project
               </Link>
             </Button>
@@ -198,78 +214,93 @@ export default function ProjectsSection() {
         {viewMode === 'list' ? (
           // Table View
             <ProjectsTable
-            projects={filteredProjects as Project[]}
+            projects={[]}
+            loading={loading}
+            emptyActionLabel="Create Project"
+            onEmptyAction={() => { window.location.href = '/dashboard/projects/new' }}
             onProjectClick={(project) => window.location.href = `/dashboard/projects/${project.id}`}
             onActionClick={(action, project) => {
               console.log(`${action} clicked for project:`, project.name)
               // Handle different actions
             }}
-          />
+          /> 
         ) : (
           // Grid View - Simplified Cards
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredProjects.map((project) => (
-              <div 
-                key={project.id} 
-                className="bg-bg border border-border rounded-lg p-5 hover:bg-muted/30 transition-colors cursor-pointer group relative min-h-[140px] flex flex-col"
-                onClick={() => window.location.href = `/dashboard/projects/${project.id}`}
-              >
-                {/* Content Area - Full Width */}
-                <div className="flex-1 mb-4">
-                  <h3 className="text-base font-semibold text-text mb-2 line-clamp-2">
-                    {project.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground line-clamp-3">
-                    {project.description}
-                  </p>
-                </div>
-                
-                {/* Bottom Row - Status and More Options */}
-                <div className="flex items-center justify-between">
-                  <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${statusColors[project.status as keyof typeof statusColors]}`}>
-                    {statusLabels[project.status as keyof typeof statusLabels]}
-                  </span>
+          loading ? (
+            <div className="flex items-center justify-center w-full min-h-[60vh]">
+              <GooeyLoader
+                primaryColor="var(--color-accent)"
+                secondaryColor="var(--accent-foreground)"
+                borderColor="var(--border)"
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredProjects.map((project) => (
+                <div 
+                  key={project.id} 
+                  className="bg-bg border border-border rounded-lg p-5 hover:bg-muted/30 transition-colors cursor-pointer group relative min-h-[140px] flex flex-col"
+                  onClick={() => window.location.href = `/dashboard/projects/${project.id}`}
+                >
+                  {/* Content Area - Full Width */}
+                  <div className="flex-1 mb-4">
+                    <h3 className="text-base font-semibold text-text mb-2 line-clamp-2">
+                      {project.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground line-clamp-3">
+                      {project.description}
+                    </p>
+                  </div>
                   
+                  {/* Bottom Row - Status and More Options */}
+                  <div className="flex items-center justify-between">
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${statusColors[project.status as keyof typeof statusColors]}`}>
+                      {statusLabels[project.status as keyof typeof statusLabels]}
+                    </span>
+                    
+                  {mounted && (
                   <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-48 p-0 bg-bg border-border" align="end" side="bottom" sideOffset={4} style={{ position: 'fixed' }}>
-                      <div className="py-1">
-                        <button
-                          className="w-full px-4 py-2 text-left text-sm text-text hover:bg-muted/50 flex items-center gap-2"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            // Handle edit
-                          }}
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Edit className="w-4 h-4" />
-                          Edit Project
-                        </button>
-                        <button
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-muted/50 flex items-center gap-2"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            // Handle delete
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
-                      </div>
-                    </PopoverContent>
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48 p-0 bg-bg border-border" align="end" side="bottom" sideOffset={4} style={{ position: 'fixed' }}>
+                        <div className="py-1">
+                          <button
+                            className="w-full px-4 py-2 text-left text-sm text-text hover:bg-muted/50 flex items-center gap-2"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              // Handle edit
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                            Edit Project
+                          </button>
+                          <button
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-muted/50 flex items-center gap-2"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              // Handle delete
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        </div>
+                      </PopoverContent>
                   </Popover>
+                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )
         )}
       </div>
     </div>

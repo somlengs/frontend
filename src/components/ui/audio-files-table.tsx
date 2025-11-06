@@ -1,9 +1,12 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { CheckCircle, Clock, AlertCircle, Edit, Download, Trash2 } from 'lucide-react'
+import { CheckCircle, Clock, AlertCircle, Edit, Download, Trash2, FileText } from 'lucide-react'
 import { Button } from './liquid-glass-button'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
+import { Doodle } from './doodle'
+import { EmptyState } from './empty-state'
+import { GooeyLoader } from './gooey-loader'
 
 export interface AudioFile {
   id: string
@@ -39,6 +42,11 @@ const statusConfig = {
   onActionClick?: (action: string, file: AudioFile) => void
   stickyHeader?: boolean
   maxHeight?: string
+  emptyTitle?: string
+  emptyDescription?: string
+  emptyActionLabel?: string
+  onEmptyAction?: () => void
+  loading?: boolean
 }
 
 export function AudioFilesTable({ 
@@ -46,7 +54,12 @@ export function AudioFilesTable({
   onFileClick, 
   onActionClick,
   stickyHeader = false,
-  maxHeight = '500px'
+  maxHeight = '500px',
+  emptyTitle = 'No audio files yet',
+  emptyDescription = 'Upload audio files to process and generate transcriptions.',
+  emptyActionLabel = 'Upload Files',
+  onEmptyAction,
+  loading = false
 }: AudioFilesTableProps) {
   const [isClient, setIsClient] = useState(false)
 
@@ -75,12 +88,35 @@ export function AudioFilesTable({
     }
   ]
 
+  const isEmpty = files.length === 0
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center w-full min-h-[60vh]">
+        <GooeyLoader
+          primaryColor="var(--color-accent)"
+          secondaryColor="var(--accent-foreground)"
+          borderColor="var(--border)"
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="bg-bg border border-border rounded-lg overflow-hidden">
       {!isClient ? (
         <div className="p-8 text-center text-muted-foreground">
           Loading...
         </div>
+      ) : isEmpty ? (
+        <EmptyState
+          title={emptyTitle}
+          description={emptyDescription}
+          icons={[FileText]}
+          action={onEmptyAction ? { label: (
+            <span className="inline-flex items-center gap-2"><FileText className="w-4 h-4" />{emptyActionLabel}</span>
+          ), onClick: onEmptyAction } : undefined}
+        />
       ) : (
         <div 
           className="overflow-x-auto overflow-y-auto custom-scrollbar"
@@ -116,9 +152,26 @@ export function AudioFilesTable({
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${status.color}`}>
-                      <StatusIcon className="h-3 w-3" />
-                      {status.label}
+                    <span className={`inline-flex items-center gap-1.5 ${file.status === 'processing' ? 'px-0 py-0 border-0 bg-transparent' : 'px-2 py-1 rounded-full text-xs font-medium border ' + status.color}`}>
+                      {file.status === 'processing' ? (
+                        <>
+                          <div className="relative w-32 h-7 overflow-hidden">
+                            <div className="absolute left-2 top-1/2 -translate-y-1/2 origin-left scale-[0.5]" >
+                              <GooeyLoader
+                                primaryColor="#6EA8FE"
+                                secondaryColor="#CFE0FF"
+                                borderColor="#DBEAFE"
+                              />
+                            </div>
+                          </div>
+                          <span className="sr-only">{status.label}</span>
+                        </>
+                      ) : (
+                        <>
+                          <StatusIcon className="h-3 w-3 shrink-0" />
+                          {status.label}
+                        </>
+                      )}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right text-sm text-text">{file.duration}</td>

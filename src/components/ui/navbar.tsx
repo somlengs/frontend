@@ -118,7 +118,7 @@ export const Header = () => {
                                         </span>
                                     </Link>
                                 </Button>
-                                <Button
+                                {/* <Button
                                     asChild
                                     variant="outline"
                                     size="default"
@@ -134,7 +134,7 @@ export const Header = () => {
                                             </TextShimmerWave>
                                         </span>
                                     </Link>
-                                </Button>
+                                </Button> */}
                                 <Button
                                     asChild
                                     size="default"

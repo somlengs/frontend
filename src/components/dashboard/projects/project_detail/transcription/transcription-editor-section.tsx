@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { BrushUnderline } from '@/components/ui/brush-underline'
+import { useTranscription } from '@/hooks/dashboard/use-transcription'
+import { Doodle } from '@/components/ui/doodle'
 
 // Mock data - replace with real data from your API
 const mockFiles = [
@@ -183,18 +185,46 @@ export default function TranscriptionEditorSection() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const { saveTranscription, isSaving, processTranscription, isProcessing } = useTranscription()
 
   const selectedFile = files.find(f => f.id === selectedFileId) || files[0]
+
+  // Update transcription when file is selected
+  React.useEffect(() => {
+    const file = files.find(f => f.id === selectedFileId) || files[0]
+    if (file) {
+      setTranscription(file.transcription || '')
+      setHasChanges(false)
+    }
+  }, [selectedFileId, files])
 
   const handleTranscriptionChange = (value: string) => {
     setTranscription(value)
     setHasChanges(value !== selectedFile.transcription)
   }
 
-  const handleSave = () => {
-    // TODO: Implement save functionality
-    console.log('Saving transcription:', transcription)
-    setHasChanges(false)
+  const handleSave = async () => {
+    const result = await saveTranscription({
+      fileId: selectedFileId,
+      transcription: transcription
+    })
+    if (result.success) {
+      setHasChanges(false)
+      // Update local file state (in real app, this would come from API)
+      const fileIndex = files.findIndex(f => f.id === selectedFileId)
+      if (fileIndex !== -1) {
+        // In a real app, update through API response
+      }
+    }
+  }
+
+  const handleProcessTranscription = async () => {
+    await processTranscription(selectedFileId)
+    // Refresh transcription if processing was successful
+    const fileIndex = files.findIndex(f => f.id === selectedFileId)
+    if (fileIndex !== -1) {
+      // In a real app, update from API response
+    }
   }
 
   const handlePlayPause = () => {
@@ -305,10 +335,19 @@ export default function TranscriptionEditorSection() {
                 size="sm"
                 className="bg-accent text-text hover:bg-accent/90"
                 onClick={handleSave}
-                disabled={!hasChanges}
+                disabled={!hasChanges || isSaving}
               >
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
+                {isSaving ? (
+                  <>
+                    <Doodle type="circle" className="w-4 h-4 mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -368,15 +407,48 @@ export default function TranscriptionEditorSection() {
           </div>
 
           {/* Transcription Editor */}
-          <div className="bg-card border border-border rounded-lg p-6">
+          <div className="bg-card border border-border rounded-lg p-6 relative">
+            {selectedFile.status === 'processing' && (
+              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
+                <div className="flex flex-col items-center gap-4">
+                  <Doodle type="circle" className="w-16 h-16 text-primary" />
+                  <div className="text-center">
+                    <p className="text-text font-medium">Processing transcription...</p>
+                    <p className="text-sm text-muted-foreground">This may take a few minutes</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-text">Transcription</h2>
               <div className="flex items-center gap-2">
+                {selectedFile.status === 'processing' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleProcessTranscription}
+                    disabled={isProcessing}
+                    className="text-text bg-accent"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Doodle type="star" className="w-4 h-4 mr-2" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Doodle type="arrow" className="w-4 h-4 mr-2" />
+                        Force Process
+                      </>
+                    )}
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setTranscription(selectedFile.transcription || '')}
                   className="text-bg bg-text"
+                  disabled={isSaving}
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />
                   Reset
@@ -396,17 +468,32 @@ export default function TranscriptionEditorSection() {
               </div>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-4 relative">
+              {isSaving && (
+                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
+                  <div className="flex flex-col items-center gap-3">
+                    <Doodle type="star" className="w-12 h-12 text-accent" />
+                    <p className="text-sm text-text font-medium">Saving...</p>
+                  </div>
+                </div>
+              )}
               <textarea
                 value={transcription}
                 onChange={(e) => handleTranscriptionChange(e.target.value)}
                 className="w-full min-h-[200px] p-4 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
-                placeholder="Enter or edit the transcription here..."
+                placeholder={selectedFile.status === 'processing' ? "Processing transcription... Please wait." : "Enter or edit the transcription here..."}
+                disabled={selectedFile.status === 'processing'}
               />
               
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>{transcription.length} characters</span>
-                <span>{transcription.split(' ').length} words</span>
+                <span>{transcription.split(' ').filter(word => word.length > 0).length} words</span>
+                {selectedFile.status === 'processing' && (
+                  <div className="flex items-center gap-2">
+                    <Doodle type="squiggle" className="w-16 h-4 text-accent" />
+                    <span className="text-accent">Processing in progress</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

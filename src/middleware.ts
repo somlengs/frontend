@@ -4,7 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-
+  
   // Create a response object
   let response = NextResponse.next({
     request: {
@@ -58,13 +58,13 @@ export async function middleware(request: NextRequest) {
       },
     }
   )
-
+  
   // Check if current route is protected
   const isProtectedRoute = pathname.startsWith('/dashboard')
-
+  
   // Check if current route is auth route
   const isAuthRoute = pathname.startsWith('/signin') || pathname.startsWith('/signup')
-
+  
   // Check if current route is public (landing page)
   const isPublicRoute = pathname === '/'
 
@@ -72,11 +72,11 @@ export async function middleware(request: NextRequest) {
   let user = null
   try {
     const { data: { user: userData }, error } = await supabase.auth.getUser()
-
+    
     if (error) {
       console.error('Supabase auth error:', error)
     }
-
+    
     user = userData
   } catch (error) {
     console.error('Middleware error:', error)
@@ -85,18 +85,18 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/signin', request.url))
     }
   }
-
+  
   // Redirect logic
   if (isProtectedRoute && !user) {
     // Redirect to signin if trying to access protected route without authentication
     return NextResponse.redirect(new URL('/signin', request.url))
   }
-
+  
   if (isAuthRoute && user) {
     // Redirect to dashboard if authenticated user tries to access auth pages
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
-
+  
   if (isPublicRoute && user) {
     // Redirect authenticated users from landing page to dashboard
     return NextResponse.redirect(new URL('/dashboard', request.url))

@@ -146,7 +146,7 @@ export default function SignInSection() {
             </form>
 
             {/* Divider */}
-            <div className="mt-6 mb-6">
+            {/* <div className="mt-6 mb-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border" />
@@ -155,10 +155,10 @@ export default function SignInSection() {
                   <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Social Sign In */}
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               <Button
                 variant="outline"
                 size="lg"
@@ -174,7 +174,7 @@ export default function SignInSection() {
                 </svg>
                 Continue with Google
               </Button>
-            </div>
+            </div> */}
 
             {/* Sign Up Link */}
             <div className="mt-6 text-center">
