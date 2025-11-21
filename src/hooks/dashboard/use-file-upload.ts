@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { API_ROUTES } from '@/lib/config'
 
 export interface AudioFile {
   id: string
@@ -8,6 +9,7 @@ export interface AudioFile {
   status: 'completed' | 'processing' | 'error'
   transcription?: string
   createdAt: string
+  audioUrl?: string
 }
 
 export function useFileUpload() {
@@ -21,25 +23,62 @@ export function useFileUpload() {
     setError(null)
 
     try {
-      // TODO: Implement actual file upload with backend team
-      console.log('Uploading files:', projectId, files)
+      // Create FormData with files
+      const formData = new FormData()
       
-      // Simulate upload progress
-      for (let i = 0; i <= 100; i += 10) {
-        setUploadProgress(i)
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
-      
-      // Mock uploaded files response
-      const uploadedFiles: AudioFile[] = files.map((file, index) => ({
-        id: `${Date.now()}-${index}`,
-        name: file.name,
-        duration: '00:00:00',
-        size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-        status: 'processing',
-        createdAt: new Date().toISOString()
-      }))
+      // Append each file with the key "files" (backend should expect this)
+      // For multiple files, use the same key name
+      files.forEach(file => {
+        formData.append('files', file)
+      })
 
+      // Use XMLHttpRequest for upload progress tracking
+      const xhr = new XMLHttpRequest()
+      
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = (e.loaded / e.total) * 100
+          setUploadProgress(Math.round(percentComplete))
+        }
+      })
+
+      const uploadPromise = new Promise<AudioFile[]>((resolve, reject) => {
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const data = JSON.parse(xhr.responseText)
+              // Handle different response formats
+              const filesList = data.files || data.data || (Array.isArray(data) ? data : [])
+              resolve(filesList)
+            } catch {
+              reject(new Error('Invalid response format'))
+            }
+          } else {
+            try {
+              const errorData = JSON.parse(xhr.responseText)
+              reject(new Error(errorData.message || errorData.error || `HTTP ${xhr.status}`))
+            } catch {
+              reject(new Error(`HTTP ${xhr.status}`))
+            }
+          }
+        })
+
+        xhr.addEventListener('error', () => {
+          reject(new Error('Network error: Upload failed'))
+        })
+
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload cancelled'))
+        })
+
+        // Use the Next.js API proxy route
+        xhr.open('POST', API_ROUTES.PROJECTS.FILES.CREATE(projectId))
+        // Don't set Content-Type header - browser will set it automatically with boundary
+        xhr.send(formData)
+      })
+
+      const uploadedFiles = await uploadPromise
       return { success: true, uploadedFiles }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Upload failed'

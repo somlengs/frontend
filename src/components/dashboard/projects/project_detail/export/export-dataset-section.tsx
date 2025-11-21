@@ -5,12 +5,17 @@ import Link from 'next/link'
 import { ArrowLeft, Download } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { BrushUnderline } from '@/components/ui/brush-underline'
+import { useSnackbar } from '@/components/ui/snackbar-provider'
+import { useParams } from 'next/navigation'
 
 export default function ExportDatasetSection() {
   // const [selectedFormat, setSelectedFormat] = useState('json')
   const [includeMetadata, setIncludeMetadata] = useState(true)
   const [includeTranscriptions, setIncludeTranscriptions] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
+  const params = useParams()
+  const projectId = params?.id as string
+  const { showSnackbar } = useSnackbar()
 
   // const exportFormats = [
   //   {
@@ -41,13 +46,13 @@ export default function ExportDatasetSection() {
 
   const handleExport = async () => {
     setIsExporting(true)
-    
+
     // Simulate export process
     await new Promise(resolve => setTimeout(resolve, 2000))
-    
+
     // Show success message
-    alert('Dataset exported successfully!')
-    
+    showSnackbar({ message: 'Dataset exported successfully', variant: 'success' })
+
     setIsExporting(false)
   }
 
@@ -55,7 +60,7 @@ export default function ExportDatasetSection() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/dashboard/projects/1">
+        <Link href={`/dashboard/projects/${projectId}`}>
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -70,28 +75,28 @@ export default function ExportDatasetSection() {
         </div>
       </div>
 
-        {/* Export Options */}
-        <div className="space-y-6">
-          {/* Dataset Organization Plan */}
-          <div className="bg-bg border border-border rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-text mb-4">Dataset Organization</h2>
-            <div className="space-y-4">
-              <div className="p-4 bg-muted/30 rounded-lg">
-                <h3 className="font-medium text-text mb-2">Standard Dataset Structure</h3>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <div>📁 <strong>wav/</strong> - Original audio files (WAV format)</div>
-                  <div>📄 <strong>metadata.tsv</strong> - Tab-separated file with metadata and transcriptions</div>
-                </div>
-              </div>
-              
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h3 className="font-medium text-blue-900 mb-2">Export Format</h3>
-                <p className="text-sm text-muted-foreground">
-                  Your dataset will be exported as a ZIP file containing the standard structure above.
-                </p>
+      {/* Export Options */}
+      <div className="space-y-6">
+        {/* Dataset Organization Plan */}
+        <div className="bg-bg border border-border rounded-lg p-6">
+          <h2 className="text-lg font-semibold text-text mb-4">Dataset Organization</h2>
+          <div className="space-y-4">
+            <div className="p-4 bg-muted/30 rounded-lg">
+              <h3 className="font-medium text-text mb-2">Standard Dataset Structure</h3>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <div>📁 <strong>wav/</strong> - Original audio files (WAV format)</div>
+                <div>📄 <strong>metadata.tsv</strong> - Tab-separated file with metadata and transcriptions</div>
               </div>
             </div>
+
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="font-medium text-blue-900 mb-2">Export Format</h3>
+              <p className="text-sm text-muted-foreground">
+                Your dataset will be exported as a ZIP file containing the standard structure above.
+              </p>
+            </div>
           </div>
+        </div>
 
         {/* Export Options */}
         <div className="bg-bg border border-border rounded-lg p-6">

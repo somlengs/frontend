@@ -2,57 +2,38 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { 
-  MoreVertical, 
+import { useRouter } from 'next/navigation'
+import {
+  MoreVertical,
   Trash2,
   Edit,
   Grid3X3,
   List,
   Search,
   Filter,
-  FolderOpen
+  FolderOpen,
+  FileText,
+  WifiOff,
+  RefreshCw
 } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { BrushUnderline } from '@/components/ui/brush-underline'
 import { ProjectsTable, Project } from '@/components/ui/projects-table'
 import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Doodle } from '@/components/ui/doodle'
+import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from '@/components/ui/popover'
 import { GooeyLoader } from '@/components/ui/gooey-loader'
-
-// Mock data - replace with real data from your API
-const mockProjects = [
-  {
-    id: '1',
-    name: 'Speech Recognition Research',
-    description: 'Dataset for training speech recognition models',
-    status: 'processing',
-    audioFiles: 12,
-    transcriptions: 8,
-    createdAt: '2024-01-15',
-    lastModified: '2024-01-20'
-  },
-  {
-    id: '2', 
-    name: 'Voice Cloning Dataset',
-    description: 'High-quality voice samples for cloning research',
-    status: 'completed',
-    audioFiles: 25,
-    transcriptions: 25,
-    createdAt: '2024-01-10',
-    lastModified: '2024-01-18'
-  },
-  {
-    id: '3',
-    name: 'Multilingual Speech Corpus',
-    description: 'Speech data in multiple languages',
-    status: 'draft',
-    audioFiles: 5,
-    transcriptions: 0,
-    createdAt: '2024-01-22',
-    lastModified: '2024-01-22'
-  }
-]
+import { EmptyState } from '@/components/ui/empty-state'
+import { useProjects } from '@/hooks'
+import { useSnackbar } from '@/components/ui/snackbar-provider'
+import { parseServiceError } from '@/lib/utils'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 const statusColors = {
   draft: 'text-muted-foreground bg-muted',
@@ -64,30 +45,61 @@ const statusColors = {
 const statusLabels = {
   draft: 'Draft',
   processing: 'Processing',
-  completed: 'Completed', 
+  completed: 'Completed',
   error: 'Error'
 }
 
 export default function ProjectsSection() {
-  const [projects] = useState(mockProjects)
+  const { projects, isLoading, error, deleteProject, updateProject, fetchProjects } = useProjects()
+  const router = useRouter()
+  const { showSnackbar } = useSnackbar()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
-  React.useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => setLoading(false), 5000)
-    return () => clearTimeout(t)
-  }, [])
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
+
+  const hasError = Boolean(error)
+  const errorInfo = parseServiceError(error)
+
+  const handleDeleteDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      setProjectToDelete(null)
+    }
+  }
+
   React.useEffect(() => {
     setMounted(true)
   }, [])
 
+  const handleDelete = (project: Project) => {
+    setProjectToDelete(project)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!projectToDelete) return
+    setDeletingId(projectToDelete.id)
+    const result = await deleteProject(projectToDelete.id)
+    setDeletingId(null)
+
+    if (result.success) {
+      showSnackbar({ message: 'Project deleted', variant: 'success' })
+    } else {
+      showSnackbar({ message: result.error || 'Failed to delete project', variant: 'error' })
+    }
+    setProjectToDelete(null)
+  }
+
+  // Handle edit project
+  const handleEdit = (project: Project) => {
+    router.push(`/dashboard/projects/${project.id}/edit`)
+  }
+
   // Filter projects based on search and status
   const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.description.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = project.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.description?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = filterStatus === null || project.status === filterStatus
     return matchesSearch && matchesStatus
   })
@@ -131,41 +143,37 @@ export default function ProjectsSection() {
                     <div className="space-y-1">
                       <button
                         onClick={() => setFilterStatus(null)}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                          filterStatus === null 
-                            ? 'bg-muted text-text' 
-                            : 'text-muted-foreground hover:text-text hover:bg-muted/50'
-                        }`}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${filterStatus === null
+                          ? 'bg-muted text-text'
+                          : 'text-muted-foreground hover:text-text hover:bg-muted/50'
+                          }`}
                       >
                         All Projects
                       </button>
                       <button
                         onClick={() => setFilterStatus('processing')}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                          filterStatus === 'processing' 
-                            ? 'bg-muted text-text' 
-                            : 'text-muted-foreground hover:text-text hover:bg-muted/50'
-                        }`}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${filterStatus === 'processing'
+                          ? 'bg-muted text-text'
+                          : 'text-muted-foreground hover:text-text hover:bg-muted/50'
+                          }`}
                       >
                         Processing
                       </button>
                       <button
                         onClick={() => setFilterStatus('completed')}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                          filterStatus === 'completed' 
-                            ? 'bg-muted text-text' 
-                            : 'text-muted-foreground hover:text-text hover:bg-muted/50'
-                        }`}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${filterStatus === 'completed'
+                          ? 'bg-muted text-text'
+                          : 'text-muted-foreground hover:text-text hover:bg-muted/50'
+                          }`}
                       >
                         Completed
                       </button>
                       <button
                         onClick={() => setFilterStatus('draft')}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                          filterStatus === 'draft' 
-                            ? 'bg-muted text-text' 
-                            : 'text-muted-foreground hover:text-text hover:bg-muted/50'
-                        }`}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${filterStatus === 'draft'
+                          ? 'bg-muted text-text'
+                          : 'text-muted-foreground hover:text-text hover:bg-muted/50'
+                          }`}
                       >
                         Draft
                       </button>
@@ -179,21 +187,19 @@ export default function ProjectsSection() {
             <div className="flex items-center bg-muted/30 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-md transition-colors ${
-                  viewMode === 'list' 
-                    ? 'bg-bg text-text shadow-sm' 
-                    : 'text-muted-foreground hover:text-text'
-                }`}
+                className={`p-2 rounded-md transition-colors ${viewMode === 'list'
+                  ? 'bg-bg text-text shadow-sm'
+                  : 'text-muted-foreground hover:text-text'
+                  }`}
               >
                 <List className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-md transition-colors ${
-                  viewMode === 'grid' 
-                    ? 'bg-bg text-text shadow-sm' 
-                    : 'text-muted-foreground hover:text-text'
-                }`}
+                className={`p-2 rounded-md transition-colors ${viewMode === 'grid'
+                  ? 'bg-bg text-text shadow-sm'
+                  : 'text-muted-foreground hover:text-text'
+                  }`}
               >
                 <Grid3X3 className="w-4 h-4" />
               </button>
@@ -213,20 +219,45 @@ export default function ProjectsSection() {
 
         {viewMode === 'list' ? (
           // Table View
-            <ProjectsTable
-            projects={[]}
-            loading={loading}
-            emptyActionLabel="Create Project"
-            onEmptyAction={() => { window.location.href = '/dashboard/projects/new' }}
+          <ProjectsTable
+            projects={hasError ? [] : filteredProjects}
+            loading={isLoading}
+            emptyTitle={
+              hasError
+                ? errorInfo.title
+                : searchQuery || filterStatus
+                  ? 'No projects match your filters'
+                  : 'No projects yet'
+            }
+            emptyDescription={
+              hasError
+                ? errorInfo.description
+                : searchQuery || filterStatus
+                  ? 'Try adjusting your search or filter criteria.'
+                  : 'Create your first project to start managing datasets and transcriptions.'
+            }
+            emptyActionLabel={hasError ? 'Try again' : 'Create Project'}
+            onEmptyAction={
+              hasError
+                ? () => { fetchProjects() }
+                : !searchQuery && !filterStatus
+                  ? () => { window.location.href = '/dashboard/projects/new' }
+                  : undefined
+            }
+            emptyIcon={hasError ? WifiOff : undefined}
+            emptyVariant={hasError && errorInfo.isServiceOutage ? 'warning' : undefined}
             onProjectClick={(project) => window.location.href = `/dashboard/projects/${project.id}`}
             onActionClick={(action, project) => {
-              console.log(`${action} clicked for project:`, project.name)
-              // Handle different actions
+              if (action === 'delete') {
+                handleDelete(project)
+              } else if (action === 'edit') {
+                handleEdit(project)
+              }
             }}
-          /> 
+          />
         ) : (
           // Grid View - Simplified Cards
-          loading ? (
+          isLoading ? (
             <div className="flex items-center justify-center w-full min-h-[60vh]">
               <GooeyLoader
                 primaryColor="var(--color-accent)"
@@ -234,11 +265,58 @@ export default function ProjectsSection() {
                 borderColor="var(--border)"
               />
             </div>
+          ) : hasError ? (
+            <div className="flex items-center justify-center w-full min-h-[60vh]">
+              <div className="bg-bg border border-border rounded-lg w-full max-w-xl">
+                <EmptyState
+                  title={errorInfo.title}
+                  description={errorInfo.description}
+                  icons={[WifiOff]}
+                  action={{
+                    label: (
+                      <span className="inline-flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4" />
+                        Try again
+                      </span>
+                    ),
+                    onClick: () => { fetchProjects() }
+                  }}
+                  variant={errorInfo.isServiceOutage ? 'warning' : 'error'}
+                />
+              </div>
+            </div>
+          ) : filteredProjects.length === 0 ? (
+            <div className="flex border border-border rounded-lg items-center justify-center w-full min-h-[60vh]">
+              <div className="bg-bg w-full max-w-xl">
+                <EmptyState
+                  title={searchQuery || filterStatus ? 'No projects match your filters' : 'No projects yet'}
+                  description={
+                    searchQuery || filterStatus
+                      ? 'Try adjusting your search or filter criteria.'
+                      : 'Create your first project to start managing datasets and transcriptions.'
+                  }
+                  icons={[FolderOpen, FileText, Edit]}
+                  action={
+                    !searchQuery && !filterStatus
+                      ? {
+                        label: (
+                          <span className="inline-flex items-center gap-2">
+                            <FolderOpen className="w-4 h-4" />
+                            Create Project
+                          </span>
+                        ),
+                        onClick: () => { window.location.href = '/dashboard/projects/new' }
+                      }
+                      : undefined
+                  }
+                />
+              </div>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredProjects.map((project) => (
-                <div 
-                  key={project.id} 
+                <div
+                  key={project.id}
                   className="bg-bg border border-border rounded-lg p-5 hover:bg-muted/30 transition-colors cursor-pointer group relative min-h-[140px] flex flex-col"
                   onClick={() => window.location.href = `/dashboard/projects/${project.id}`}
                 >
@@ -251,51 +329,57 @@ export default function ProjectsSection() {
                       {project.description}
                     </p>
                   </div>
-                  
+
                   {/* Bottom Row - Status and More Options */}
                   <div className="flex items-center justify-between">
-                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${statusColors[project.status as keyof typeof statusColors]}`}>
-                      {statusLabels[project.status as keyof typeof statusLabels]}
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${statusColors[project.status as keyof typeof statusColors] || statusColors.draft}`}>
+                      {statusLabels[project.status as keyof typeof statusLabels] || statusLabels.draft}
                     </span>
-                    
-                  {mounted && (
-                  <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-48 p-0 bg-bg border-border" align="end" side="bottom" sideOffset={4} style={{ position: 'fixed' }}>
-                        <div className="py-1">
-                          <button
-                            className="w-full px-4 py-2 text-left text-sm text-text hover:bg-muted/50 flex items-center gap-2"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              // Handle edit
-                            }}
+
+                    {mounted && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <Edit className="w-4 h-4" />
-                            Edit Project
-                          </button>
-                          <button
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-muted/50 flex items-center gap-2"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              // Handle delete
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
-                          </button>
-                        </div>
-                      </PopoverContent>
-                  </Popover>
-                  )}
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-0 bg-bg border-border" align="end" side="bottom" sideOffset={4} style={{ position: 'fixed' }}>
+                          <div className="py-1">
+                            <PopoverClose asChild>
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm text-text hover:bg-muted/50 flex items-center gap-2 disabled:opacity-50"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEdit(project)
+                                }}
+                                disabled={deletingId === project.id}
+                              >
+                                <Edit className="w-4 h-4" />
+                                Edit Project
+                              </button>
+                            </PopoverClose>
+                            <PopoverClose asChild>
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-muted/50 flex items-center gap-2 disabled:opacity-50"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDelete(project)
+                                }}
+                                disabled={deletingId === project.id || isLoading}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                {deletingId === project.id ? 'Deleting...' : 'Delete'}
+                              </button>
+                            </PopoverClose>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    )}
                   </div>
                 </div>
               ))}
@@ -303,6 +387,33 @@ export default function ProjectsSection() {
           )
         )}
       </div>
+
+      <Dialog open={!!projectToDelete} onOpenChange={handleDeleteDialogOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete project</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{projectToDelete?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setProjectToDelete(null)}
+              disabled={deletingId === projectToDelete?.id}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deletingId === projectToDelete?.id}
+            >
+              {deletingId === projectToDelete?.id ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

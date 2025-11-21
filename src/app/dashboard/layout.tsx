@@ -5,9 +5,9 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  FolderOpen, 
-  Settings, 
+import {
+  FolderOpen,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -54,11 +54,17 @@ export default function DashboardLayout({
     <div className="h-screen bg-bg overflow-hidden">
       {/* Mobile sidebar */}
       <div className={cn(
-        "fixed inset-0 z-50 lg:hidden",
-        sidebarOpen ? "block" : "hidden"
+        "fixed inset-0 z-50 lg:hidden transition-opacity duration-300",
+        sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
       )}>
-        <div className="fixed inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-        <div className="fixed inset-y-0 left-0 w-64">
+        <div
+          className="fixed inset-0 bg-black/50 transition-opacity duration-300"
+          onClick={() => setSidebarOpen(false)}
+        />
+        <div className={cn(
+          "fixed inset-y-0 left-0 w-64 bg-bg shadow-xl transition-transform duration-300 ease-out",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
           <div className="flex items-center justify-between p-4">
             <Link href="/dashboard" className="flex items-center gap-2">
               <img src="/logo.png" alt="Somleng" className="w-8 h-8 border rounded-md" />
@@ -75,12 +81,13 @@ export default function DashboardLayout({
                 <Link
                   key={item.name}
                   href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-md transition-colors font-bold",
-                      isActive 
-                        ? "bg-muted text-foreground" 
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    )}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-md transition-colors font-bold",
+                    isActive
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                  onClick={() => setSidebarOpen(false)}
                 >
                   <item.icon className="w-5 h-5" />
                   {item.name}
@@ -110,8 +117,8 @@ export default function DashboardLayout({
                       href={item.href}
                       className={cn(
                         "group flex gap-x-3 rounded-md px-3 py-2 text-sm leading-6 transition-colors",
-                        isActive 
-                          ? "bg-muted text-foreground" 
+                        isActive
+                          ? "bg-muted text-foreground"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       )}
                     >
@@ -132,7 +139,7 @@ export default function DashboardLayout({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">
-                        {user.user_metadata?.first_name && user.user_metadata?.last_name 
+                        {user.user_metadata?.first_name && user.user_metadata?.last_name
                           ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
                           : user.user_metadata?.first_name || user.email?.split('@')[0]
                         }
@@ -144,7 +151,7 @@ export default function DashboardLayout({
                   </div>
                 </div>
               )}
-              
+
               <Button
                 size="sm"
                 className="w-full"

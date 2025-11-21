@@ -59,11 +59,6 @@ export default function SignInSection() {
 
           {/* Sign In Form */}
           <div className="bg-card border border-border rounded-lg p-8 shadow-lg">
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-600">{error}</p>
-              </div>
-            )}
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Email Field */}
               <div>

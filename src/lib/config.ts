@@ -1,21 +1,46 @@
 // Simple API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000',
+  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080',
   API_KEY: process.env.NEXT_PUBLIC_API_KEY || '',
 }
 
-// API Routes (Direct Supabase calls - no proxy needed)
+// Backend API Routes (protected by Next.js API proxy)
+export const BACKEND_API_ROUTES = {
+  PROJECTS: {
+    LIST: '/v1/project',
+    CREATE: '/v1/project',
+    GET: (id: string) => `/v1/project/${id}`,
+    UPDATE: (id: string) => `/v1/project/${id}`,
+    DELETE: (id: string) => `/v1/project/${id}`,
+    PROCESS: (id: string) => `/v1/project/${id}/process`,
+    FILES: {
+      LIST: (id: string) => `/v1/project/${id}/files`,
+      CREATE: (id: string) => `/v1/project/${id}/files`,
+      UPDATE: (id: string, fileId: string) => `/v1/project/${id}/files/${fileId}`,
+      DELETE: (id: string, fileId: string) => `/v1/project/${id}/files/${fileId}`,
+    }
+  }
+}
+
+// Next.js API Proxy Routes (frontend calls these)
 export const API_ROUTES = {
   AUTH: {
     SIGNIN: '/api/v1/auth/signin',
     SIGNUP: '/api/v1/auth/signup',
   },
   PROJECTS: {
-    LIST: '/api/v1/projects',
-    CREATE: '/api/v1/projects',
-    GET: (id: string) => `/api/v1/projects/${id}`,
-    UPDATE: (id: string) => `/api/v1/projects/${id}`,
-    DELETE: (id: string) => `/api/v1/projects/${id}`,
+    LIST: '/api/v1/project',
+    CREATE: '/api/v1/project',
+    GET: (id: string) => `/api/v1/project/${id}`,
+    UPDATE: (id: string) => `/api/v1/project/${id}`,
+    DELETE: (id: string) => `/api/v1/project/${id}`,
+    PROCESS: (id: string) => `/api/v1/project/${id}/process`,
+    FILES: {
+      LIST: (id: string) => `/api/v1/project/${id}/files`,
+      CREATE: (id: string) => `/api/v1/project/${id}/files`,
+      UPDATE: (id: string, fileId: string) => `/api/v1/project/${id}/files/${fileId}`,
+      DELETE: (id: string, fileId: string) => `/api/v1/project/${id}/files/${fileId}`,
+    }
   }
 }
 

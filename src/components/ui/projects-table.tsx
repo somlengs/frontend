@@ -1,12 +1,12 @@
 'use client'
 
 import React from 'react'
-import { CheckCircle, Clock, AlertCircle, FileText, Trash2, Edit, FolderOpen } from 'lucide-react'
+import { CheckCircle, Clock, AlertCircle, FileText, Trash2, Edit, FolderOpen, LucideIcon } from 'lucide-react'
 import { Button } from './liquid-glass-button'
 import { Doodle } from './doodle'
 import { GooeyLoader } from './gooey-loader'
 import { EmptyState } from './empty-state'
-import { Popover, PopoverContent, PopoverTrigger } from './popover'
+import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from './popover'
 
 export interface Project {
   id: string
@@ -51,27 +51,31 @@ interface ProjectsTableProps {
   emptyActionLabel?: string
   onEmptyAction?: () => void
   loading?: boolean
+  emptyIcon?: LucideIcon
+  emptyVariant?: 'default' | 'warning' | 'error'
 }
 
-export function ProjectsTable({ 
-  projects, 
-  onProjectClick, 
+export function ProjectsTable({
+  projects,
+  onProjectClick,
   onActionClick,
   emptyTitle = 'No projects yet',
   emptyDescription = 'Create your first project to start managing datasets and transcriptions.',
   emptyActionLabel = 'Create Project',
   onEmptyAction,
-  loading = false
+  loading = false,
+  emptyIcon,
+  emptyVariant
 }: ProjectsTableProps) {
   const actions = [
     {
       label: 'Edit Project',
-      icon: <Edit className="w-4 h-4" />, 
+      icon: <Edit className="w-4 h-4" />,
       onClick: (project: Project) => onActionClick?.('edit', project)
     },
     {
       label: 'Delete',
-      icon: <Trash2 className="w-4 h-4" />, 
+      icon: <Trash2 className="w-4 h-4" />,
       onClick: (project: Project) => onActionClick?.('delete', project),
       className: 'text-red-600 hover:bg-red-50'
     }
@@ -94,14 +98,21 @@ export function ProjectsTable({
   return (
     <div className="bg-bg border border-border rounded-lg overflow-hidden">
       {isEmpty ? (
-        <EmptyState
-          title={emptyTitle}
-          description={emptyDescription}
-          icons={[FolderOpen, FileText, Edit]}
-          action={onEmptyAction ? { label: (
-            <span className="inline-flex items-center gap-2"><FolderOpen className="w-4 h-4" />{emptyActionLabel}</span>
-          ), onClick: onEmptyAction } : undefined}
-        />
+        <div className="flex items-center justify-center w-full min-h-[60vh]">
+          <div className="w-full max-w-xl">
+            <EmptyState
+              title={emptyTitle}
+              description={emptyDescription}
+              icons={emptyIcon ? [emptyIcon] : [FolderOpen, FileText, Edit]}
+              action={onEmptyAction ? {
+                label: (
+                  <span className="inline-flex items-center gap-2"><FolderOpen className="w-4 h-4" />{emptyActionLabel}</span>
+                ), onClick: onEmptyAction
+              } : undefined}
+              variant={emptyVariant}
+            />
+          </div>
+        </div>
       ) : (
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full caption-bottom text-sm">
@@ -116,18 +127,19 @@ export function ProjectsTable({
             </thead>
             <tbody>
               {projects.map((project) => {
-                const status = statusConfig[project.status as keyof typeof statusConfig]
+                // Get status config with fallback to draft if status is unknown
+                const status = statusConfig[project.status as keyof typeof statusConfig] || statusConfig.draft
                 const StatusIcon = status.icon
                 return (
-                  <tr 
+                  <tr
                     key={project.id}
                     className="cursor-pointer group hover:bg-muted/50 border-b transition-colors"
                     onClick={() => onProjectClick?.(project)}
                   >
                     <td className="py-3 px-4">
                       <div>
-                        <div className="text-md font-medium text-text  ">{project.name}</div>
-                        <div className="text-xs text-muted-foreground">{project.description}</div>
+                        <div className="text-md font-medium text-text  ">{project.name || 'Unnamed Project'}</div>
+                        <div className="text-xs text-muted-foreground">{project.description || 'No description'}</div>
                       </div>
                     </td>
                     <td className="py-3 px-4">
@@ -153,8 +165,8 @@ export function ProjectsTable({
                         )}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right text-sm text-text">{project.audioFiles}</td>
-                    <td className="py-3 px-4 text-sm text-text">{project.createdAt}</td>
+                    <td className="py-3 px-4 text-right text-sm text-text">{project.audioFiles ?? 0}</td>
+                    <td className="py-3 px-4 text-sm text-text">{project.createdAt || 'N/A'}</td>
                     <td className="py-3 px-4 text-right">
                       <Popover>
                         <PopoverTrigger asChild>
@@ -172,17 +184,18 @@ export function ProjectsTable({
                         <PopoverContent className="w-48 p-0 bg-bg border-border" align="end" side="bottom" sideOffset={4}>
                           <div className="py-1">
                             {actions.map((action, actionIndex) => (
-                              <button
-                                key={actionIndex}
-                                className={`w-full px-4 py-2 text-left text-sm hover:bg-muted/50 flex items-center gap-2 ${action.className || 'text-text'}`}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  action.onClick(project)
-                                }}
-                              >
-                                {action.icon}
-                                {action.label}
-                              </button>
+                              <PopoverClose asChild key={actionIndex}>
+                                <button
+                                  className={`w-full px-4 py-2 text-left text-sm hover:bg-muted/50 flex items-center gap-2 ${action.className || 'text-text'}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    action.onClick(project)
+                                  }}
+                                >
+                                  {action.icon}
+                                  {action.label}
+                                </button>
+                              </PopoverClose>
                             ))}
                           </div>
                         </PopoverContent>

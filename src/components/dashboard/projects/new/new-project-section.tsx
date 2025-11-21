@@ -1,19 +1,28 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Upload, FileText, X } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { BrushUnderline } from '@/components/ui/brush-underline'
+import { useProjects } from '@/hooks'
+import { useFileUpload } from '@/hooks'
+import { useSnackbar } from '@/components/ui/snackbar-provider'
 
 export default function NewProjectSection() {
+  const router = useRouter()
+  const { createProject } = useProjects()
+  const { uploadFiles, isUploading, uploadProgress } = useFileUpload()
+  const { showSnackbar } = useSnackbar()
+  
   const [projectName, setProjectName] = useState('')
   const [description, setDescription] = useState('')
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [isCreating, setIsCreating] = useState(false)
+  const [isDragActive, setIsDragActive] = useState(false)
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || [])
-    
+  const processFiles = (files: File[]) => {
     // Check file size limits
     const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB per file
     const MAX_TOTAL_SIZE = 500 * 1024 * 1024 // 500MB total
@@ -44,10 +53,10 @@ export default function NewProjectSection() {
       
       // Check file type
       const isZip = file.name.toLowerCase().endsWith('.zip')
-      const isAudio = file.name.toLowerCase().match(/\.(wav|mp3)$/)
+      const isAudio = file.name.toLowerCase().match(/\.(wav)$/)
       
       if (!isZip && !isAudio) {
-        errors.push(`${file.name}: Only WAV, MP3, and ZIP files allowed`)
+        errors.push(`${file.name}: Only WAV audio files and ZIP datasets are allowed`)
         continue
       }
       
@@ -57,28 +66,101 @@ export default function NewProjectSection() {
     
     // Show errors if any
     if (errors.length > 0) {
-      alert('Upload errors:\n' + errors.join('\n'))
+      showSnackbar({ message: errors.join(' • '), variant: 'error' })
     }
     
     // Add valid files
     if (newFiles.length > 0) {
       setUploadedFiles(prev => [...prev, ...newFiles])
     }
+  }
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || [])
+    processFiles(files)
     
     // Reset input
     event.target.value = ''
+  }
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setIsDragActive(false)
+
+    const files = Array.from(event.dataTransfer?.files || [])
+    if (files.length === 0) return
+    processFiles(files)
+  }
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!isDragActive) setIsDragActive(true)
+  }
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    // Only reset when leaving the container, not children
+    if ((event.target as HTMLElement).id === 'file-dropzone') {
+      setIsDragActive(false)
+    }
   }
 
   const removeFile = (index: number) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle project creation
-    console.log('Creating project:', { projectName, description, uploadedFiles })
-    // Redirect to dashboard or project page
-    window.location.href = '/dashboard'
+    if (uploadedFiles.length === 0) {
+      showSnackbar({ message: 'Add at least one WAV file or ZIP dataset to create a project.', variant: 'error' })
+      return
+    }
+
+    // Determine project name:
+    // - Use user-provided name if present
+    // - Otherwise, derive from first file name
+    const generateNameFromFile = (file: File): string => {
+      const withoutExtension = file.name.replace(/\.[^/.]+$/, '')
+      const cleaned = withoutExtension.replace(/[_\-]+/g, ' ').trim()
+      if (!cleaned) return 'Untitled Project'
+      return cleaned
+        .split(' ')
+        .filter(Boolean)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ')
+    }
+
+    const effectiveProjectName =
+      projectName.trim() || generateNameFromFile(uploadedFiles[0])
+
+    setIsCreating(true)
+    try {
+      // Create project with dataset files in a single request
+      const projectResult = await createProject({
+        name: effectiveProjectName,
+        description: description || '',
+        files: uploadedFiles,
+      })
+
+      if (!projectResult.success || !projectResult.project) {
+        showSnackbar({ message: projectResult.error || 'Failed to create project', variant: 'error' })
+        setIsCreating(false)
+        return
+      }
+
+      const newProjectId = projectResult.project.id
+
+      // Redirect to project page
+      showSnackbar({ message: 'Project created successfully', variant: 'success' })
+      router.push(`/dashboard/projects/${newProjectId}`)
+    } catch (error) {
+      console.error('Error creating project:', error)
+      showSnackbar({ message: 'Failed to create project', variant: 'error' })
+      setIsCreating(false)
+    }
   }
 
   return (
@@ -102,7 +184,7 @@ export default function NewProjectSection() {
           <div className="space-y-4">
             <div>
               <label htmlFor="projectName" className="block text-sm font-medium text-text mb-2">
-                Project Name
+                Project Name <span className="text-muted-foreground font-normal">(optional)</span>
               </label>
               <input
                 type="text"
@@ -110,8 +192,7 @@ export default function NewProjectSection() {
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded-md bg-card text-text placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="Enter project name"
-                required
+                placeholder="If left empty, we'll use your first file name"
               />
             </div>
 
@@ -133,14 +214,22 @@ export default function NewProjectSection() {
           {/* File Upload */}
           <div className="space-y-4">
             <label className="block text-sm font-medium text-text">
-              Upload Audio Files
+              Upload Dataset <span className="text-red-500">*</span>
             </label>
             
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
+            <div
+              id="file-dropzone"
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                isDragActive ? 'border-primary bg-muted/40' : 'border-border hover:border-primary'
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <input
                 type="file"
                 multiple
-                accept=".wav,.mp3,.zip"
+                accept=".wav,.zip"
                 onChange={handleFileUpload}
                 className="hidden"
                 id="file-upload"
@@ -148,10 +237,10 @@ export default function NewProjectSection() {
               <label htmlFor="file-upload" className="cursor-pointer">
                 <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  Click to upload audio files or drag and drop
+                  Click to upload files or drag and drop your dataset
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Supports WAV, MP3 files or ZIP datasets
+                  Supports WAV audio files or ZIP datasets
                 </p>
               </label>
             </div>
@@ -199,7 +288,7 @@ export default function NewProjectSection() {
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {uploadedFiles.map((file, index) => {
                     const isZip = file.name.toLowerCase().endsWith('.zip')
-                    const isAudio = file.name.toLowerCase().match(/\.(wav|mp3)$/)
+                    const isAudio = file.name.toLowerCase().match(/\.(wav)$/)
                     return (
                       <div key={index} className="flex items-center justify-between bg-muted/30 rounded-md px-3 py-2">
                         <div className="flex items-center gap-2">
@@ -241,9 +330,11 @@ export default function NewProjectSection() {
             <Button 
               type="submit" 
               className="bg-text text-bg hover:bg-text/90"
-              disabled={!projectName.trim()}
+              disabled={uploadedFiles.length === 0 || isCreating || isUploading}
             >
-              Create Project
+              {isCreating || isUploading 
+                ? `Creating... ${isUploading ? uploadProgress + '%' : ''}` 
+                : 'Create Project'}
             </Button>
           </div>
         </div>
