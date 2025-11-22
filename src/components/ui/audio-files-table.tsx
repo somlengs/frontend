@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { CheckCircle, Clock, AlertCircle, Edit, Download, Trash2, FileText } from 'lucide-react'
+import { CheckCircle, Clock, AlertCircle, Edit, Trash2, FileText } from 'lucide-react'
 import { Button } from './liquid-glass-button'
 import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from './popover'
-import { Doodle } from './doodle'
+
 import { EmptyState } from './empty-state'
 import { GooeyLoader } from './gooey-loader'
 

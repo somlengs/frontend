@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fetchBackend, getAuthHeaders } from '@/lib/api-client'
-import { BACKEND_API_ROUTES, API_CONFIG } from '@/lib/config'
+import { fetchBackend } from '@/lib/api-client'
+import { BACKEND_API_ROUTES } from '@/lib/config'
 
 // PATCH /api/v1/project/[id]/files/[fileId] - Edit file
 export async function PATCH(

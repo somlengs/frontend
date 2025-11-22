@@ -5,7 +5,7 @@ export interface ProcessStatus {
   status: 'pending' | 'processing' | 'completed' | 'error'
   progress?: number
   message?: string
-  output?: any
+  output?: string | null
 }
 
 export function useProcess() {
@@ -13,7 +13,7 @@ export function useProcess() {
   const [processStatus, setProcessStatus] = useState<ProcessStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const startProcess = async (projectId: string, options?: any) => {
+  const startProcess = async (projectId: string, options?: unknown) => {
     setIsProcessing(true)
     setError(null)
     setProcessStatus({ status: 'pending' })
@@ -64,8 +64,8 @@ export function useProcess() {
       setProcessStatus(data)
 
       return { success: true, status: data }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch process status'
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start processing'
       setError(errorMessage)
       return { success: false, error: errorMessage }
     }

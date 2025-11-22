@@ -13,9 +13,9 @@ import { useSnackbar } from '@/components/ui/snackbar-provider'
 export default function NewProjectSection() {
   const router = useRouter()
   const { createProject } = useProjects()
-  const { uploadFiles, isUploading, uploadProgress } = useFileUpload()
+  const { isUploading, uploadProgress } = useFileUpload()
   const { showSnackbar } = useSnackbar()
-  
+
   const [projectName, setProjectName] = useState('')
   const [description, setDescription] = useState('')
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
@@ -27,48 +27,48 @@ export default function NewProjectSection() {
     const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB per file
     const MAX_TOTAL_SIZE = 500 * 1024 * 1024 // 500MB total
     const MAX_FILES = 100 // Maximum number of files
-    
+
     let totalSize = uploadedFiles.reduce((sum, file) => sum + file.size, 0)
     const newFiles: File[] = []
     const errors: string[] = []
-    
+
     for (const file of files) {
       // Check individual file size
       if (file.size > MAX_FILE_SIZE) {
         errors.push(`${file.name}: File too large (max 50MB)`)
         continue
       }
-      
+
       // Check total size limit
       if (totalSize + file.size > MAX_TOTAL_SIZE) {
         errors.push(`${file.name}: Total upload size would exceed 500MB`)
         continue
       }
-      
+
       // Check file count limit
       if (uploadedFiles.length + newFiles.length >= MAX_FILES) {
         errors.push(`Maximum ${MAX_FILES} files allowed`)
         break
       }
-      
+
       // Check file type
       const isZip = file.name.toLowerCase().endsWith('.zip')
       const isAudio = file.name.toLowerCase().match(/\.(wav)$/)
-      
+
       if (!isZip && !isAudio) {
         errors.push(`${file.name}: Only WAV audio files and ZIP datasets are allowed`)
         continue
       }
-      
+
       newFiles.push(file)
       totalSize += file.size
     }
-    
+
     // Show errors if any
     if (errors.length > 0) {
       showSnackbar({ message: errors.join(' • '), variant: 'error' })
     }
-    
+
     // Add valid files
     if (newFiles.length > 0) {
       setUploadedFiles(prev => [...prev, ...newFiles])
@@ -78,7 +78,7 @@ export default function NewProjectSection() {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
     processFiles(files)
-    
+
     // Reset input
     event.target.value = ''
   }
@@ -166,16 +166,16 @@ export default function NewProjectSection() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-       <div className="flex items-start justify-start gap-4">
-         <Link href="/dashboard">
-           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-             <ArrowLeft className="h-4 w-4" />
-           </Button>
-         </Link>
-         <h1 className="text-3xl font-serif text-text">
-           <BrushUnderline variant="accent" animated>Create New Project</BrushUnderline>
-         </h1>
-       </div>
+      <div className="flex items-start justify-start gap-4">
+        <Link href="/dashboard">
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Link>
+        <h1 className="text-3xl font-serif text-text">
+          <BrushUnderline variant="accent" animated>Create New Project</BrushUnderline>
+        </h1>
+      </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -216,12 +216,11 @@ export default function NewProjectSection() {
             <label className="block text-sm font-medium text-text">
               Upload Dataset <span className="text-red-500">*</span>
             </label>
-            
+
             <div
               id="file-dropzone"
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                isDragActive ? 'border-primary bg-muted/40' : 'border-border hover:border-primary'
-              }`}
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${isDragActive ? 'border-primary bg-muted/40' : 'border-border hover:border-primary'
+                }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
@@ -257,19 +256,18 @@ export default function NewProjectSection() {
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      (uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) > 0.8 
-                        ? 'bg-red-500' 
-                        : (uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) > 0.6 
-                        ? 'bg-yellow-500' 
-                        : 'bg-primary'
-                    }`}
-                    style={{ 
+                  <div
+                    className={`h-2 rounded-full transition-all duration-300 ${(uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) > 0.8
+                        ? 'bg-red-500'
+                        : (uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) > 0.6
+                          ? 'bg-yellow-500'
+                          : 'bg-primary'
+                      }`}
+                    style={{
                       width: `${Math.min(
-                        (uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) * 100, 
+                        (uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) * 100,
                         100
-                      )}%` 
+                      )}%`
                     }}
                   ></div>
                 </div>
@@ -294,11 +292,10 @@ export default function NewProjectSection() {
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm text-text truncate">{file.name}</span>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            isZip ? 'bg-blue-100 text-blue-800' : 
-                            isAudio ? 'bg-green-100 text-green-800' : 
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span className={`text-xs px-2 py-1 rounded-full ${isZip ? 'bg-blue-100 text-blue-800' :
+                              isAudio ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                            }`}>
                             {isZip ? 'ZIP Dataset' : isAudio ? 'Audio File' : 'Unknown'}
                           </span>
                           <span className="text-xs text-muted-foreground">
@@ -327,13 +324,13 @@ export default function NewProjectSection() {
                 Cancel
               </Button>
             </Link>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="bg-text text-bg hover:bg-text/90"
               disabled={uploadedFiles.length === 0 || isCreating || isUploading}
             >
-              {isCreating || isUploading 
-                ? `Creating... ${isUploading ? uploadProgress + '%' : ''}` 
+              {isCreating || isUploading
+                ? `Creating... ${isUploading ? uploadProgress + '%' : ''}`
                 : 'Create Project'}
             </Button>
           </div>

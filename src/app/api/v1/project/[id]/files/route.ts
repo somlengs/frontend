@@ -46,7 +46,6 @@ export async function POST(
     // Backend expects 'file' (singular) per request
     // We'll upload files one by one
     const files = formData.getAll('files')
-    console.log(`Uploading ${files.length} file(s) to project ${id}`)
 
     const headers = await getAuthHeaders()
     // Remove Content-Type header - fetch will set it automatically with boundary for FormData
@@ -60,7 +59,6 @@ export async function POST(
       const singleFileFormData = new FormData()
       singleFileFormData.append('file', file) // Backend expects 'file' not 'files'
 
-      console.log(`Uploading file: ${(file as File).name}`)
 
       const response = await fetch(backendUrl, {
         method: 'POST',

@@ -13,7 +13,7 @@ export default function UploadAudioSection() {
   const params = useParams()
   const router = useRouter()
   const projectId = params?.id as string
-  const { uploadFiles, isUploading, uploadProgress, error } = useFileUpload()
+  const { uploadFiles, isUploading, uploadProgress } = useFileUpload()
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [isDragActive, setIsDragActive] = useState(false)
   const { showSnackbar } = useSnackbar()

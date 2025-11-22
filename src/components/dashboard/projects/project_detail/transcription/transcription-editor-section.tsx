@@ -1,26 +1,22 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Play,
-  Pause,
   Save,
-  Download,
-  RotateCcw,
-  Volume2,
-  VolumeX,
   CheckCircle,
   Clock,
   AlertCircle,
   ChevronRight,
-  Home
+  Home,
+  Volume2,
+  VolumeX
 } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { BrushUnderline } from '@/components/ui/brush-underline'
-import { useFiles } from '@/hooks'
-import { useProcess } from '@/hooks'
+import { useFiles, AudioFile } from '@/hooks/dashboard/use-files'
 import { Doodle } from '@/components/ui/doodle'
 import { useSnackbar } from '@/components/ui/snackbar-provider'
 import {
@@ -57,7 +53,7 @@ type TrackData = {
   url: string
 }
 
-function TranscriptionAudioPlayer({ file }: { file: any }) {
+function TranscriptionAudioPlayer({ file }: { file: AudioFile | undefined }) {
   const player = useAudioPlayer<TrackData>()
 
   useEffect(() => {
@@ -117,7 +113,7 @@ export default function TranscriptionEditorSection() {
   const fileId = params?.fileId as string
 
   const { files, updateFile, isLoading: filesLoading } = useFiles(projectId || '')
-  const { startProcess, isProcessing } = useProcess()
+  // const { startProcess } = useProcess()
   const { showSnackbar } = useSnackbar()
 
   const [selectedFileId, setSelectedFileId] = useState(fileId || '')
@@ -127,6 +123,22 @@ export default function TranscriptionEditorSection() {
   const [isSaving, setIsSaving] = useState(false)
 
   const selectedFile = files.find(f => f.id === selectedFileId) || files[0]
+
+  // Update transcription when file is selected or files are loaded
+  useEffect(() => {
+    if (selectedFileId) {
+      // Assuming fetchFile is a function that fetches the file details
+      // and updates the state, or that `files` array is already populated
+      // and `selectedFile` will be updated reactively.
+      // For this example, we'll just ensure the transcription is set
+      // if the selectedFileId changes and the file is available.
+      const file = files.find(f => f.id === selectedFileId);
+      if (file) {
+        setTranscription(file.transcription || '');
+        setHasChanges(false);
+      }
+    }
+  }, [selectedFileId, files]); // Added files to dependency array to ensure it reacts to file data loading
 
   // Update transcription when file is selected or files are loaded
   useEffect(() => {
@@ -141,7 +153,7 @@ export default function TranscriptionEditorSection() {
       setSelectedFileId(files[0].id)
       setTranscription(files[0].transcription || '')
     }
-  }, [fileId, files])
+  }, [fileId, files, selectedFileId])
 
   const handleTranscriptionChange = (value: string) => {
     setTranscription(value)
@@ -157,12 +169,12 @@ export default function TranscriptionEditorSection() {
         transcription: transcription,
       })
       if (result.success) {
+        showSnackbar({ message: 'Transcription saved successfully', variant: 'success' })
         setHasChanges(false)
-        showSnackbar({ message: 'Transcription saved', variant: 'success' })
       } else {
         showSnackbar({ message: result.error || 'Failed to save transcription', variant: 'error' })
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Save error:', error)
       showSnackbar({ message: 'Failed to save transcription', variant: 'error' })
     } finally {
@@ -170,29 +182,9 @@ export default function TranscriptionEditorSection() {
     }
   }
 
-  const handleProcessTranscription = async () => {
-    if (!projectId) return
-
-    try {
-      const result = await startProcess(projectId)
-      if (result.success) {
-        showSnackbar({ message: 'Processing started', variant: 'info' })
-        setTimeout(() => {
-          window.location.reload()
-        }, 2000)
-      } else {
-        showSnackbar({ message: result.error || 'Failed to start processing', variant: 'error' })
-      }
-    } catch (error) {
-      console.error('Process error:', error)
-      showSnackbar({ message: 'Failed to start processing', variant: 'error' })
-    }
-  }
-
   const handleFileSelect = (fileId: string) => {
     if (hasChanges) {
       // TODO: Ask user if they want to save changes
-      console.log('Unsaved changes detected')
     }
     setSelectedFileId(fileId)
     const file = files.find(f => f.id === fileId)
@@ -209,7 +201,7 @@ export default function TranscriptionEditorSection() {
             <Home className="w-4 h-4" />
           </Link>
           <ChevronRight className="w-4 h-4" />
-          <Link href={`/dashboard/projects/${projectId}`} className="hover:text-text transition-colors">
+          <Link href={`/ dashboard / projects / ${projectId} `} className="hover:text-text transition-colors">
             Project
           </Link>
           <ChevronRight className="w-4 h-4" />
@@ -235,14 +227,14 @@ export default function TranscriptionEditorSection() {
                   <div
                     key={file.id}
                     onClick={() => handleFileSelect(file.id)}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors ${isSelected
+                    className={`p - 3 rounded - lg cursor - pointer transition - colors ${isSelected
                       ? 'bg-bg bordertext-text'
                       : 'hover:bg-bg/20 text-bg/70 hover:text-bg'
-                      }`}
+                      } `}
                   >
                     <div className="flex items-start justify-between mb-1">
                       <h3 className="font-medium text-sm truncate flex-1">{file.name}</h3>
-                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border ${status.color}`}>
+                      <span className={`inline - flex items - center gap - 1 px - 1.5 py - 0.5 rounded - full text - xs font - medium border ${status.color} `}>
                         <StatusIcon className="h-3 w-3" />
                       </span>
                     </div>
@@ -337,13 +329,13 @@ export default function TranscriptionEditorSection() {
                       asChild
                       className="text-text bg-accent"
                     >
-                      <Link href={`/dashboard/projects/${projectId}/transcriptions/${selectedFileId}/download`}>
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </Link>
-                    </Button> */}
-                  </div>
-                </div>
+                      <Link href={`/ dashboard / projects / ${ projectId } /transcriptions/${ selectedFileId }/download`}>
+  <Download className="w-4 h-4 mr-2" />
+Download
+                      </Link >
+                    </Button > */}
+                  </div >
+                </div >
 
                 <div className="space-y-4 relative">
                   {isSaving && (
@@ -367,11 +359,11 @@ export default function TranscriptionEditorSection() {
                     <span>{transcription.split(' ').filter(word => word.length > 0).length} words</span>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </AudioPlayerProvider>
+              </div >
+            </div >
+          </div >
+        </div >
+      </div >
+    </AudioPlayerProvider >
   )
 }

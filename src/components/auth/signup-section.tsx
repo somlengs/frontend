@@ -18,7 +18,7 @@ export default function SignUpSection() {
     agreeToTerms: false
   })
   const router = useRouter()
-  const { signUp, signUpWithGoogle, isLoading, error } = useSignUp()
+  const { signUp, isLoading } = useSignUp()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -30,12 +30,11 @@ export default function SignUpSection() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const result = await signUp(formData)
-    
+
     if (result.success) {
       // Redirect to dashboard after successful signup
-      console.log('Sign up successful:', result.data)
       router.push('/dashboard')
     } else {
       // Handle error (error is already set in the hook)
@@ -43,16 +42,6 @@ export default function SignUpSection() {
     }
   }
 
-  const handleGoogleSignUp = async () => {
-    const result = await signUpWithGoogle()
-    
-    if (result.success) {
-      console.log('Google sign up successful:', result.data)
-      router.push('/dashboard')
-    } else {
-      console.error('Google sign up failed:', result.error)
-    }
-  }
 
   return (
     <>
@@ -196,7 +185,7 @@ export default function SignUpSection() {
                   <span className="group relative">
                     <span className="group-hover:hidden">Create Account</span>
                     <span className="hidden group-hover:inline-block">
-                      <TextShimmerWave 
+                      <TextShimmerWave
                         waveOnly={true}
                         fontSize="1.1rem"
                       >
@@ -243,8 +232,8 @@ export default function SignUpSection() {
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Already have an account?{' '}
-                <Link 
-                  href="/signin" 
+                <Link
+                  href="/signin"
                   className="text-primary hover:text-primary/80 transition-colors font-medium"
                 >
                   Sign in

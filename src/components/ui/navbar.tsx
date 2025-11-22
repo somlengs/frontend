@@ -1,10 +1,11 @@
 'use client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Equal, X } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave'
 import React from 'react'
-import { cn } from '@/lib/utils' 
+import { cn } from '@/lib/utils'
 
 const menuItems = [
     { name: 'Products', href: '#link' },
@@ -36,14 +37,14 @@ export const Header = () => {
                                 href="/"
                                 aria-label="home"
                                 className="flex gap-2 items-center">
-                                <img
+                                <Image
                                     src="/logo.png"
                                     alt="Somleng Logo"
-                                    width="32"
-                                    height="32"
+                                    width={32}
+                                    height={32}
                                     className="w-10 h-10 border rounded-md"
                                 />
-                             <p className='font-semibold text-xl tracking-tighter'> Somleng</p>  
+                                <p className='font-semibold text-xl tracking-tighter'> Somleng</p>
                             </Link>
 
                             <button
@@ -84,7 +85,7 @@ export const Header = () => {
                                 </ul>
                             </div>
                             <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-2 sm:space-y-0 md:w-fit">
-                                  
+
                                 <Button
                                     asChild
                                     variant="outline"
@@ -93,7 +94,7 @@ export const Header = () => {
                                     <Link href="/signin" className="group relative">
                                         <span className="group-hover:hidden">Login</span>
                                         <span className="hidden group-hover:inline-block">
-                                            <TextShimmerWave 
+                                            <TextShimmerWave
                                                 waveOnly={true}
                                                 fontSize="1.1rem"
                                             >
@@ -109,7 +110,7 @@ export const Header = () => {
                                     <Link href="/signup" className="group relative">
                                         <span className="group-hover:hidden">Sign Up</span>
                                         <span className="hidden group-hover:inline-block">
-                                            <TextShimmerWave 
+                                            <TextShimmerWave
                                                 waveOnly={true}
                                                 fontSize="1.1rem"
                                             >
@@ -142,7 +143,7 @@ export const Header = () => {
                                     <Link href="/signup" className="group relative">
                                         <span className="group-hover:hidden">Get Started</span>
                                         <span className="hidden group-hover:inline-block">
-                                            <TextShimmerWave 
+                                            <TextShimmerWave
                                                 waveOnly={true}
                                                 fontSize="1.1rem"
                                             >

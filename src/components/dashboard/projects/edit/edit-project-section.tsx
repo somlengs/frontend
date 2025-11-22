@@ -47,7 +47,7 @@ export default function EditProjectSection() {
     return () => {
       cancelled = true
     }
-  }, [projectId, getProject])
+  }, [projectId, getProject, showSnackbar])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()

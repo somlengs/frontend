@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { API_ROUTES } from '@/lib/config'
 import { AudioFile } from './use-file-upload'
+export type { AudioFile }
 
 // Helper functions for data mapping
 function formatDuration(seconds: number): string {
@@ -47,7 +48,7 @@ export function useFiles(projectId: string) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchFiles = async () => {
+  const fetchFiles = useCallback(async () => {
     if (!projectId) return
 
     setIsLoading(true)
@@ -70,16 +71,19 @@ export function useFiles(projectId: string) {
       const rawFiles = data.files || data.data || (Array.isArray(data) ? data : [])
 
       // Map backend response to frontend AudioFile format
-      const mappedFiles: AudioFile[] = rawFiles.map((f: any) => {
+      const mappedFiles: AudioFile[] = rawFiles.map((f: unknown) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const file = f as any;
+
         const transcription =
-          f.transcription ||
-          f.transcription_text ||
-          f.transcription_content ||
-          f.transcriptions?.[0]?.data ||
+          file.transcription ||
+          file.transcription_text ||
+          file.transcription_content ||
+          file.transcriptions?.[0]?.data ||
           null
 
         let status = mapStatus(
-          f.status || f.processing_status || f.transcription_status || 'processing',
+          file.status || file.processing_status || file.transcription_status || 'processing',
         )
 
         // If we already have a transcription but backend status is still "processing",
@@ -89,21 +93,20 @@ export function useFiles(projectId: string) {
         }
 
         return {
-          id: String(f.id || f.file_id || f.fileId || ''),
-          name: f.name || f.file_name || f.filename || 'Unknown',
+          id: String(file.id || file.file_id || file.fileId || ''),
+          name: file.name || file.file_name || file.filename || 'Unknown',
           duration: formatDurationValue(
-            f.duration ?? f.duration_seconds ?? f.duration_ms,
+            file.duration ?? file.duration_seconds ?? file.duration_ms,
           ),
-          size: formatFileSize(f.file_size ?? f.size_bytes ?? f.size ?? 0),
+          size: formatFileSize(file.file_size ?? file.size_bytes ?? file.size ?? 0),
           status,
           transcription,
           createdAt:
-            f.created_at || f.createdAt || f.created || new Date().toISOString(),
+            file.created_at || file.createdAt || file.created || new Date().toISOString(),
           audioUrl:
-            f.audio_url ||
-            f.audioUrl ||
-            f.file_url ||
-            f.url ||
+            file.audioUrl ||
+            file.file_url ||
+            file.url ||
             undefined,
         }
       })
@@ -115,7 +118,7 @@ export function useFiles(projectId: string) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [projectId])
 
   const updateFile = async (fileId: string, data: Partial<AudioFile>) => {
     setIsLoading(true)
@@ -123,7 +126,7 @@ export function useFiles(projectId: string) {
 
     try {
       // Transform frontend field names to backend field names
-      const backendData: any = {}
+      const backendData: Record<string, unknown> = {}
       if (data.name !== undefined) {
         backendData.file_name = data.name
       }
@@ -164,7 +167,7 @@ export function useFiles(projectId: string) {
       ))
 
       return { success: true }
-    } catch (err) {
+    } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update file'
       setError(errorMessage)
       return { success: false, error: errorMessage }
@@ -196,7 +199,8 @@ export function useFiles(projectId: string) {
       setFiles(prev => prev.filter(file => file.id !== fileId))
 
       return { success: true }
-    } catch (err) {
+    } catch (err: unknown) {
+      console.error('Error deleting file:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete file'
       setError(errorMessage)
       return { success: false, error: errorMessage }
@@ -206,8 +210,10 @@ export function useFiles(projectId: string) {
   }
 
   useEffect(() => {
-    fetchFiles()
-  }, [projectId])
+    if (projectId) {
+      fetchFiles()
+    }
+  }, [projectId, fetchFiles])
 
   return {
     files,

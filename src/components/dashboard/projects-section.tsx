@@ -50,7 +50,7 @@ const statusLabels = {
 }
 
 export default function ProjectsSection() {
-  const { projects, isLoading, error, deleteProject, updateProject, fetchProjects } = useProjects()
+  const { projects, isLoading, error, deleteProject, fetchProjects } = useProjects()
   const router = useRouter()
   const { showSnackbar } = useSnackbar()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
@@ -393,7 +393,7 @@ export default function ProjectsSection() {
           <DialogHeader>
             <DialogTitle>Delete project</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{projectToDelete?.name}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{projectToDelete?.name}&quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

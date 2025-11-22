@@ -10,7 +10,7 @@ async function fetchFileCount(projectId: string): Promise<number> {
         'Content-Type': 'application/json',
       },
     })
-    
+
     if (response.ok) {
       const data = await response.json()
       const files = Array.isArray(data) ? data : data?.files || data?.data || []
@@ -59,19 +59,17 @@ export function useProjects() {
       }
 
       const data = await response.json()
-      console.log('Raw backend response:', data)
-      
+
       // Handle different response formats: array, { projects: [] }, { data: [] }
-      const rawProjects = Array.isArray(data) 
-        ? data 
+      const rawProjects = Array.isArray(data)
+        ? data
         : data?.projects || data?.data || []
-      
-      console.log('Raw projects array:', rawProjects)
+
       // Debug: Log file counts from backend
-      rawProjects.forEach((p: any) => {
-        console.log(`Project ${p.name}: num_of_files = ${p.num_of_files}, audioFiles = ${p.audioFiles}`)
+      rawProjects.forEach((p: unknown) => {
+        const proj = p as Record<string, unknown>
       })
-      
+
       // Format date to YYYY-MM-DD
       const formatDate = (dateString: string | null | undefined): string => {
         if (!dateString) return 'N/A'
@@ -82,11 +80,12 @@ export function useProjects() {
           return dateString
         }
       }
-      
+
       // Map backend response to Project interface
-      let projectsList: Project[] = rawProjects.map((p: any) => {
+      let projectsList: Project[] = rawProjects.map((p: unknown) => {
+        const proj = p as Record<string, unknown>
         // Normalise backend status values to our limited set
-        let status = (p.status || 'draft').toLowerCase()
+        let status = (String(proj.status || 'draft')).toLowerCase()
 
         // Treat various in-progress states as "processing"
         if (status === 'loading' || status === 'pending' || status === 'in_progress') {
@@ -104,31 +103,30 @@ export function useProjects() {
         }
 
         return {
-          id: p.id || p.project_id || String(p.id),
-          name: p.name || p.project_name || 'Unnamed Project',
-          description: p.description || p.desc || '',
+          id: String(proj.id || proj.project_id || proj.id),
+          name: String(proj.name || proj.project_name || 'Unnamed Project'),
+          description: String(proj.description || proj.desc || ''),
           status: status as 'draft' | 'processing' | 'completed' | 'error',
-          audioFiles: p.num_of_files ?? p.audioFiles ?? p.audio_files ?? p.file_count ?? p.files_count ?? 0,
-          transcriptions: p.transcriptions || p.transcription_count || 0,
-          createdAt: formatDate(p.created_at || p.createdAt || p.created),
-          lastModified: formatDate(p.updated_at || p.lastModified || p.last_modified || p.updated || p.created_at || p.createdAt)
+          audioFiles: Number(proj.num_of_files ?? proj.audioFiles ?? proj.audio_files ?? proj.file_count ?? proj.files_count ?? 0),
+          transcriptions: Number(proj.transcriptions || proj.transcription_count || 0),
+          createdAt: formatDate(String(proj.created_at || proj.createdAt || proj.created)),
+          lastModified: formatDate(String(proj.updated_at || proj.lastModified || proj.last_modified || proj.updated || proj.created_at || proj.createdAt))
         }
       })
-      
+
       // If num_of_files is 0 but files might exist in storage, fetch file counts
       // This is a fallback - backend should ideally provide the count
       const projectsWithZeroFiles = projectsList.filter(p => p.audioFiles === 0)
       if (projectsWithZeroFiles.length > 0) {
-        console.log(`Fetching file counts for ${projectsWithZeroFiles.length} project(s) with 0 files...`)
-        
+
         // Fetch file counts in parallel
         const fileCountPromises = projectsWithZeroFiles.map(async (project) => {
           const count = await fetchFileCount(project.id)
           return { id: project.id, count }
         })
-        
+
         const fileCounts = await Promise.all(fileCountPromises)
-        
+
         // Update projects with actual file counts
         projectsList = projectsList.map(project => {
           const fileCount = fileCounts.find(fc => fc.id === project.id)
@@ -138,7 +136,7 @@ export function useProjects() {
           return project
         })
       }
-      
+
       setProjects(projectsList)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch projects'
@@ -203,7 +201,8 @@ export function useProjects() {
       setProjects(prev => [newProject, ...prev])
 
       return { success: true, project: newProject }
-    } catch (err) {
+    } catch (err: unknown) {
+      console.error('Error creating project:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to create project'
       setError(errorMessage)
       return { success: false, error: errorMessage }
@@ -267,7 +266,7 @@ export function useProjects() {
 
       const project = await response.json()
       return { success: true, project }
-    } catch (err) {
+    } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch project'
       setError(errorMessage)
       return { success: false, error: errorMessage }

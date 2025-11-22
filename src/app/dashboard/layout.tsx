@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -11,8 +12,6 @@ import {
   LogOut,
   Menu,
   X,
-  Plus,
-  User
 } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 
@@ -67,7 +66,7 @@ export default function DashboardLayout({
         )}>
           <div className="flex items-center justify-between p-4">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <img src="/logo.png" alt="Somleng" className="w-8 h-8 border rounded-md" />
+              <Image src="/logo.png" alt="Somleng" width={32} height={32} className="w-8 h-8 border rounded-md" />
               <span className="font-semibold text-lg text-text">Somleng</span>
             </Link>
             <button onClick={() => setSidebarOpen(false)}>
@@ -103,7 +102,7 @@ export default function DashboardLayout({
         <div className="flex grow flex-col gap-y-5 overflow-y-auto">
           <div className="flex h-16 shrink-0 items-center px-6">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <img src="/logo.png" alt="Somleng" className="w-8 h-8 border rounded-md" />
+              <Image src="/logo.png" alt="Somleng" width={32} height={32} className="w-8 h-8 border rounded-md" />
               <span className="font-semibold text-lg text-text">Somleng</span>
             </Link>
           </div>
@@ -134,8 +133,8 @@ export default function DashboardLayout({
               {user && (
                 <div className="mb-4 px-3 py-2 bg-muted/50 rounded-md">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-text text-bg rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4" />
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
+                      {user?.email?.[0].toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">

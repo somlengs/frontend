@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/liquid-glass-button"
-import { FolderOpen, Link, LucideIcon } from "lucide-react"
+import { LucideIcon } from 'lucide-react'
 import { Doodle } from "./doodle"
 
 interface EmptyStateProps {

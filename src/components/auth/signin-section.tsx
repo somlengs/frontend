@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave'
 import { BrushUnderlineBold } from '@/components/ui/brush-underline'
@@ -12,17 +11,15 @@ import { useSignIn } from '@/hooks'
 export default function SignInSection() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const router = useRouter()
-  const { signIn, signInWithGoogle, isLoading, error } = useSignIn()
+  const { signIn, isLoading } = useSignIn()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const result = await signIn({ email, password })
-    
+
     if (result.success) {
       // Redirect to dashboard after successful signin
-      console.log('Sign in successful:', result.data)
       // Let middleware handle the redirect by refreshing the page
       window.location.href = '/dashboard'
     } else {
@@ -31,16 +28,6 @@ export default function SignInSection() {
     }
   }
 
-  const handleGoogleSignIn = async () => {
-    const result = await signInWithGoogle()
-    
-    if (result.success) {
-      console.log('Google sign in successful:', result.data)
-      router.push('/dashboard')
-    } else {
-      console.error('Google sign in failed:', result.error)
-    }
-  }
 
   return (
     <>
@@ -104,8 +91,8 @@ export default function SignInSection() {
                     Remember me
                   </label>
                 </div>
-                <Link 
-                  href="#" 
+                <Link
+                  href="#"
                   className="text-sm text-primary hover:text-primary/80 transition-colors"
                 >
                   Forgot password?
@@ -128,7 +115,7 @@ export default function SignInSection() {
                   <span className="group relative">
                     <span className="group-hover:hidden">Sign In</span>
                     <span className="hidden group-hover:inline-block">
-                      <TextShimmerWave 
+                      <TextShimmerWave
                         waveOnly={true}
                         fontSize="1.1rem"
                       >
@@ -175,8 +162,8 @@ export default function SignInSection() {
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Don&apos;t have an account?{' '}
-                <Link 
-                  href="/signup" 
+                <Link
+                  href="/signup"
                   className="text-primary hover:text-primary/80 transition-colors font-medium"
                 >
                   Sign up

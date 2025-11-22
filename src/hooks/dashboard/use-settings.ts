@@ -58,9 +58,9 @@ export function useSettings() {
 
             if (error) throw error
             return { success: true }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error updating profile:', error)
-            const msg = error.message || 'Failed to update profile'
+            const msg = error instanceof Error ? error.message : 'Failed to update profile'
             setError(msg)
             return { success: false, error: msg }
         } finally {
@@ -91,9 +91,9 @@ export function useSettings() {
             setNewPassword('')
             setConfirmPassword('')
             return { success: true }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error updating password:', error)
-            const msg = error.message || 'Failed to update password'
+            const msg = error instanceof Error ? error.message : 'Failed to update password'
             setError(msg)
             return { success: false, error: msg }
         } finally {

@@ -3,7 +3,7 @@ import { fetchBackend } from '@/lib/api-client'
 import { BACKEND_API_ROUTES } from '@/lib/config'
 
 async function extractParams(params: { id: string } | Promise<{ id: string }>) {
-  return typeof (params as any).then === 'function' ? await params : (params as { id: string })
+  return typeof (params as Record<string, unknown>).then === 'function' ? await params : (params as { id: string })
 }
 
 async function getErrorMessage(response: Response, fallback: string) {
@@ -31,16 +31,16 @@ export async function GET(
       BACKEND_API_ROUTES.PROJECTS.GET(id),
       { method: 'GET' }
     )
-    
+
     const data = await response.json()
-    
+
     if (!response.ok) {
       return NextResponse.json(
         { error: data.message || 'Failed to fetch project' },
         { status: response.status }
       )
     }
-    
+
     return NextResponse.json(data)
   } catch (error) {
     console.error('Error fetching project:', error)
@@ -59,7 +59,7 @@ export async function PATCH(
   try {
     const { id } = await extractParams(context.params)
     const body = await request.json()
-    
+
     const response = await fetchBackend(
       BACKEND_API_ROUTES.PROJECTS.UPDATE(id),
       {
@@ -67,16 +67,16 @@ export async function PATCH(
         body: JSON.stringify(body),
       }
     )
-    
+
     const data = await response.json()
-    
+
     if (!response.ok) {
       return NextResponse.json(
         { error: data.message || 'Failed to update project' },
         { status: response.status }
       )
     }
-    
+
     return NextResponse.json(data)
   } catch (error) {
     console.error('Error updating project:', error)
@@ -98,26 +98,25 @@ export async function DELETE(
       BACKEND_API_ROUTES.PROJECTS.DELETE(id),
       { method: 'DELETE' }
     )
-    
+
     if (!response.ok) {
       return NextResponse.json(
         { error: await getErrorMessage(response, 'Failed to delete project') },
         { status: response.status }
       )
     }
-    let data: any = null
+    let data: unknown = null
     try {
       data = await response.json()
     } catch {
       // no body
     }
     return NextResponse.json(data ?? { detail: 'Project deleted successfully' })
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting project:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Failed to delete project' },
       { status: 500 }
     )
   }
 }
-

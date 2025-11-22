@@ -8,15 +8,13 @@ import {
   Download,
   FileText,
   ChevronRight,
-  Home
+  Home,
 } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { BrushUnderline } from '@/components/ui/brush-underline'
 import { AudioFilesTable, AudioFile } from '@/components/ui/audio-files-table'
-import { useProjects } from '@/hooks'
-import { useFiles } from '@/hooks'
-import { useProcess } from '@/hooks'
-import { Doodle } from '@/components/ui/doodle'
+import { useProjects, Project } from '@/hooks/dashboard/use-projects'
+import { useFiles } from '@/hooks/dashboard/use-files'
 import Pagination from '@/components/ui/pagination'
 import { useSnackbar } from '@/components/ui/snackbar-provider'
 import {
@@ -38,7 +36,7 @@ export default function ProjectDetailSection() {
   const [isProcessing, setIsProcessing] = useState(false)
   const { showSnackbar } = useSnackbar()
 
-  const [project, setProject] = useState<any>(null)
+  const [project, setProject] = useState<Project | null>(null)
   const [projectLoading, setProjectLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'all' | 'completed' | 'processing' | 'error'>('all')
   const [page, setPage] = useState(1)
@@ -142,7 +140,7 @@ export default function ProjectDetailSection() {
       } else {
         showSnackbar({ message: result.error || 'Failed to delete file', variant: 'error' })
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Delete error:', error)
       showSnackbar({ message: 'Failed to delete file', variant: 'error' })
     }
@@ -180,7 +178,6 @@ export default function ProjectDetailSection() {
       window.location.href = `/dashboard/projects/${projectId}/transcriptions/${file.id}`
     } else if (action === 'download') {
       // TODO: Implement file download
-      console.log('Download file:', file.id)
     }
   }
 
@@ -205,7 +202,7 @@ export default function ProjectDetailSection() {
               {projectLoading ? 'Loading...' : (project?.name || 'Unnamed Project')}
             </BrushUnderline>
           </h1>
-          <p className="mt-2 text-muted-foreground">{project?.description || ''}</p>
+          <p className="text-muted-foreground mb-6">You haven&apos;t uploaded any audio files yet.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -338,7 +335,7 @@ export default function ProjectDetailSection() {
           <DialogHeader>
             <DialogTitle>Delete file</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{fileToDelete?.name}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{fileToDelete?.name}&quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -359,6 +356,6 @@ export default function ProjectDetailSection() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   )
 }

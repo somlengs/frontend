@@ -3,7 +3,6 @@
 import React from 'react'
 import { CheckCircle, Clock, AlertCircle, FileText, Trash2, Edit, FolderOpen, LucideIcon } from 'lucide-react'
 import { Button } from './liquid-glass-button'
-import { Doodle } from './doodle'
 import { GooeyLoader } from './gooey-loader'
 import { EmptyState } from './empty-state'
 import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from './popover'
