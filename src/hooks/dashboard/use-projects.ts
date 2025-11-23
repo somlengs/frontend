@@ -51,6 +51,10 @@ export function useProjects() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          if (typeof window !== 'undefined') window.location.href = '/signin'
+          throw new Error('Session expired')
+        }
         const errorData = await response.json().catch(() => ({}))
         const message =
           (errorData && (errorData.error || errorData.message)) ||
@@ -190,6 +194,11 @@ export function useProjects() {
       }
 
       if (!response.ok) {
+        if (response.status === 401) {
+          if (typeof window !== 'undefined') window.location.href = '/signin'
+          return { success: false, error: 'Session expired' }
+        }
+
         const errorData = await response.json().catch(() => ({}))
         const message =
           (errorData && (errorData.error || errorData.message)) ||
@@ -225,6 +234,11 @@ export function useProjects() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          if (typeof window !== 'undefined') window.location.href = '/signin'
+          return { success: false, error: 'Session expired' }
+        }
+
         const errorData = await response.json().catch(() => ({}))
         const message =
           (errorData && (errorData.error || errorData.message)) ||
@@ -257,6 +271,11 @@ export function useProjects() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          if (typeof window !== 'undefined') window.location.href = '/signin'
+          return { success: false, error: 'Session expired' }
+        }
+
         const errorData = await response.json().catch(() => ({}))
         const message =
           (errorData && (errorData.error || errorData.message)) ||
@@ -286,6 +305,10 @@ export function useProjects() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          if (typeof window !== 'undefined') window.location.href = '/signin'
+          return { success: false, error: 'Session expired' }
+        }
         const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.message || `HTTP ${response.status}`)
       }

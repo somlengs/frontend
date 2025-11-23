@@ -167,7 +167,7 @@ export function AudioFilesTable({
                 <th className="text-right py-3 px-4 text-sm font-medium text-bg">Duration</th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-bg">Size</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-bg">Date</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-bg">Actions</th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-bg"></th>
               </tr>
             </thead>
             <tbody>

@@ -121,7 +121,7 @@ export function ProjectsTable({
                 <th className="text-left py-3 px-4 text-sm font-medium text-bg">Status</th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-bg">Files</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-bg">Created</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-bg">Actions</th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-bg"></th>
               </tr>
             </thead>
             <tbody>

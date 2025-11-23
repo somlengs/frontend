@@ -202,7 +202,7 @@ export default function ProjectDetailSection() {
               {projectLoading ? 'Loading...' : (project?.name || 'Unnamed Project')}
             </BrushUnderline>
           </h1>
-          <p className="text-muted-foreground mb-6">You haven&apos;t uploaded any audio files yet.</p>
+          {/* <p className="text-muted-foreground mb-6">You haven&apos;t uploaded any audio files yet.</p> */}
         </div>
 
         <div className="flex items-center gap-3">

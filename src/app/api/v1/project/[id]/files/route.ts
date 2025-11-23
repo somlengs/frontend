@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fetchBackend, getAuthHeaders } from '@/lib/api-client'
+import { fetchBackend, getAuthHeaders } from '@/lib/api-client-server'
 import { BACKEND_API_ROUTES, API_CONFIG } from '@/lib/config'
 
 // GET /api/v1/project/[id]/files - Get all files

@@ -7,53 +7,26 @@ import { Button } from '@/components/ui/liquid-glass-button'
 import { BrushUnderline } from '@/components/ui/brush-underline'
 import { useSnackbar } from '@/components/ui/snackbar-provider'
 import { useParams } from 'next/navigation'
+import { useExport } from '@/hooks/dashboard/use-export'
 
 export default function ExportDatasetSection() {
-  // const [selectedFormat, setSelectedFormat] = useState('json')
-  const [includeMetadata, setIncludeMetadata] = useState(true)
-  const [includeTranscriptions, setIncludeTranscriptions] = useState(true)
-  const [isExporting, setIsExporting] = useState(false)
+  const [format, setFormat] = useState<'csv' | 'tsv'>('csv')
   const params = useParams()
   const projectId = params?.id as string
   const { showSnackbar } = useSnackbar()
-
-  // const exportFormats = [
-  //   {
-  //     id: 'json',
-  //     name: 'JSON',
-  //     description: 'Structured data format for developers',
-  //     icon: '📄'
-  //   },
-  //   {
-  //     id: 'csv',
-  //     name: 'CSV',
-  //     description: 'Spreadsheet format for data analysis',
-  //     icon: '📊'
-  //   },
-  //   {
-  //     id: 'txt',
-  //     name: 'Text Files',
-  //     description: 'Plain text files for each transcription',
-  //     icon: '📝'
-  //   },
-  //   {
-  //     id: 'srt',
-  //     name: 'SRT',
-  //     description: 'SubRip subtitle format for video editing',
-  //     icon: '🎬'
-  //   }
-  // ]
+  const { exportDataset, isExporting } = useExport()
 
   const handleExport = async () => {
-    setIsExporting(true)
+    const result = await exportDataset({
+      projectId,
+      format
+    })
 
-    // Simulate export process
-    await new Promise(resolve => setTimeout(resolve, 2000))
-
-    // Show success message
-    showSnackbar({ message: 'Dataset exported successfully', variant: 'success' })
-
-    setIsExporting(false)
+    if (result.success) {
+      showSnackbar({ message: 'Dataset exported successfully', variant: 'success' })
+    } else {
+      showSnackbar({ message: result.error || 'Export failed', variant: 'error' })
+    }
   }
 
   return (
@@ -84,8 +57,8 @@ export default function ExportDatasetSection() {
             <div className="p-4 bg-muted/30 rounded-lg">
               <h3 className="font-medium text-text mb-2">Standard Dataset Structure</h3>
               <div className="text-sm text-muted-foreground space-y-1">
-                <div>📁 <strong>wav/</strong> - Original audio files (WAV format)</div>
-                <div>📄 <strong>metadata.tsv</strong> - Tab-separated file with metadata and transcriptions</div>
+                <div>📁 <strong>files/</strong> - Original audio files (WAV format)</div>
+                <div>📄 <strong>metadata.{format}</strong> - {format === 'csv' ? 'Comma' : 'Tab'}-separated file with metadata and transcriptions</div>
               </div>
             </div>
 
@@ -93,6 +66,7 @@ export default function ExportDatasetSection() {
               <h3 className="font-medium text-blue-900 mb-2">Export Format</h3>
               <p className="text-sm text-muted-foreground">
                 Your dataset will be exported as a ZIP file containing the standard structure above.
+                Metadata and transcriptions are always included for completed files.
               </p>
             </div>
           </div>
@@ -102,60 +76,42 @@ export default function ExportDatasetSection() {
         <div className="bg-bg border border-border rounded-lg p-6">
           <h2 className="text-lg font-semibold text-text mb-4">Export Options</h2>
           <div className="space-y-4">
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={includeMetadata}
-                onChange={(e) => setIncludeMetadata(e.target.checked)}
-                className="rounded border-border"
-              />
-              <div>
-                <div className="font-medium text-text">Include Metadata</div>
-                <div className="text-sm text-muted-foreground">
-                  File names, sizes, durations, and creation dates
-                </div>
+            <div className="flex flex-col gap-3">
+              <label className="text-sm font-medium text-text">Metadata Format</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="format"
+                    value="csv"
+                    checked={format === 'csv'}
+                    onChange={(e) => setFormat(e.target.value as 'csv')}
+                    className="text-accent focus:ring-accent"
+                  />
+                  <span className="text-text">CSV (Comma-separated)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="format"
+                    value="tsv"
+                    checked={format === 'tsv'}
+                    onChange={(e) => setFormat(e.target.value as 'tsv')}
+                    className="text-accent focus:ring-accent"
+                  />
+                  <span className="text-text">TSV (Tab-separated)</span>
+                </label>
               </div>
-            </label>
-
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={includeTranscriptions}
-                onChange={(e) => setIncludeTranscriptions(e.target.checked)}
-                className="rounded border-border"
-              />
-              <div>
-                <div className="font-medium text-text">Include Transcriptions</div>
-                <div className="text-sm text-muted-foreground">
-                  All text transcriptions and their timestamps
-                </div>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        {/* Project Summary */}
-        <div className="bg-muted/30 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-text mb-4">Export Summary</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-text">12</div>
-              <div className="text-sm text-muted-foreground">Audio Files</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-text">8</div>
-              <div className="text-sm text-muted-foreground">Transcriptions</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-text">2.4 MB</div>
-              <div className="text-sm text-muted-foreground">Estimated Size</div>
+              <p className="text-sm text-muted-foreground">
+                Choose the delimiter for your metadata file. Both formats include file paths and transcriptions.
+              </p>
             </div>
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3">
-          <Link href="/dashboard/projects/1">
+          <Link href={`/dashboard/projects/${projectId}`}>
             <Button variant="ghost">
               Cancel
             </Button>

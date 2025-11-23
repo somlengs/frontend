@@ -1,10 +1,10 @@
 import { useState } from 'react'
+import { fetchBackend } from '@/lib/api-client'
+import { BACKEND_API_ROUTES } from '@/lib/config'
 
 interface ExportData {
   projectId: string
-  format: 'zip' | 'json' | 'csv'
-  includeMetadata: boolean
-  includeTranscriptions: boolean
+  format: 'csv' | 'tsv'
 }
 
 export function useExport() {
@@ -16,16 +16,45 @@ export function useExport() {
     setError(null)
 
     try {
-      // TODO: Implement actual export with backend team
+      const endpoint = BACKEND_API_ROUTES.PROJECTS.DOWNLOAD(data.projectId)
+      const response = await fetchBackend(
+        `${endpoint}?format=${data.format}&toolkit=Wav2Vec2`,
+        {
+          method: 'GET',
+        }
+      )
 
-      // Simulate export process
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      if (!response.ok) {
+        throw new Error(`Export failed: ${response.statusText}`)
+      }
 
-      // Mock download URL
-      const downloadUrl = `/api/projects/${data.projectId}/export?format=${data.format}`
+      const blob = await response.blob()
 
-      return { success: true, downloadUrl, estimatedSize: '2.4 MB' }
+      // Create blob link to download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      // Extract filename from header or default
+      const contentDisposition = response.headers.get('content-disposition');
+      let fileName = `project-${data.projectId}-export.zip`;
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (fileNameMatch && fileNameMatch.length === 2)
+          fileName = fileNameMatch[1];
+      }
+
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      return { success: true }
     } catch (err) {
+      console.error('Export error:', err)
       const errorMessage = err instanceof Error ? err.message : 'Export failed'
       setError(errorMessage)
       return { success: false, error: errorMessage }
@@ -34,30 +63,8 @@ export function useExport() {
     }
   }
 
-  const getExportSummary = async (projectId: string) => {
-    try {
-      // TODO: Implement actual summary with backend team
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300))
-
-      // Mock summary data
-      return {
-        audioFiles: 12,
-        transcriptions: 8,
-        estimatedSize: '2.4 MB',
-        formats: ['zip', 'json', 'csv']
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to get export summary'
-      setError(errorMessage)
-      return null
-    }
-  }
-
   return {
     exportDataset,
-    getExportSummary,
     isExporting,
     error,
     clearError: () => setError(null)

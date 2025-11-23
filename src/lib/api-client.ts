@@ -1,8 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/client'
 import { API_CONFIG } from './config'
 
 export async function getAuthHeaders() {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
 
   const headers: HeadersInit = {
@@ -10,7 +10,7 @@ export async function getAuthHeaders() {
   }
 
   if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token} `
+    headers['Authorization'] = `Bearer ${session.access_token}`
   }
 
   if (API_CONFIG.API_KEY) {
@@ -27,7 +27,7 @@ export async function fetchBackend(
   try {
     const headers = await getAuthHeaders()
 
-    const url = `${API_CONFIG.BASE_URL}${endpoint} `
+    const url = `${API_CONFIG.BASE_URL}${endpoint}`
 
     const response = await fetch(url, {
       ...options,
@@ -36,6 +36,13 @@ export async function fetchBackend(
         ...options.headers,
       },
     })
+
+    if (response.status === 401) {
+      // Handle session expiration globally
+      if (typeof window !== 'undefined') {
+        window.location.href = '/signin'
+      }
+    }
 
     return response
   } catch (error) {

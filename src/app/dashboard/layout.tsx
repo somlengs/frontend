@@ -35,9 +35,21 @@ export default function DashboardLayout({
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT') {
+          router.push('/signin')
+        } else if (session?.user) {
+          setUser(session.user)
+        }
+      })
+
+      return () => {
+        subscription.unsubscribe()
+      }
     }
     getUser()
-  }, [])
+  }, [router])
 
   const handleSignOut = async () => {
     try {

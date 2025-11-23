@@ -1,6 +1,6 @@
 // Simple API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080',
+  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8080',
   API_KEY: process.env.NEXT_PUBLIC_API_KEY || '',
 }
 
@@ -18,7 +18,8 @@ export const BACKEND_API_ROUTES = {
       CREATE: (id: string) => `/v1/project/${id}/files`,
       UPDATE: (id: string, fileId: string) => `/v1/project/${id}/files/${fileId}`,
       DELETE: (id: string, fileId: string) => `/v1/project/${id}/files/${fileId}`,
-    }
+    },
+    DOWNLOAD: (id: string) => `/v1/project/${id}/download`,
   }
 }
 
@@ -40,7 +41,8 @@ export const API_ROUTES = {
       CREATE: (id: string) => `/api/v1/project/${id}/files`,
       UPDATE: (id: string, fileId: string) => `/api/v1/project/${id}/files/${fileId}`,
       DELETE: (id: string, fileId: string) => `/api/v1/project/${id}/files/${fileId}`,
-    }
+    },
+    DOWNLOAD: (id: string) => `/api/v1/project/${id}/download`,
   }
 }
 
@@ -57,18 +59,18 @@ export const ROUTE_CONFIG = {
     '/dashboard/projects/[id]/transcriptions',
     '/dashboard/projects/[id]/transcriptions/[fileId]',
   ],
-  
+
   // Routes that redirect to dashboard if user is authenticated
   AUTH_ROUTES: [
     '/signin',
     '/signup',
   ],
-  
+
   // Public routes (accessible to everyone)
   PUBLIC_ROUTES: [
     '/',
   ],
-  
+
   // Default redirects
   DEFAULT_REDIRECTS: {
     AUTHENTICATED: '/dashboard',
