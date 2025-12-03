@@ -25,7 +25,26 @@ export function useExport() {
       )
 
       if (!response.ok) {
-        throw new Error(`Export failed: ${response.statusText}`)
+        // Try to parse error message from backend
+        let errorMessage = 'Export failed'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.detail || errorData.message || errorData.error || errorMessage
+        } catch {
+          // If JSON parsing fails, use status text
+          errorMessage = response.statusText
+        }
+
+        // Map to user-friendly messages
+        if (response.status === 403 || response.status === 400) {
+          errorMessage = 'All files must be transcribed before exporting. Please complete processing first.'
+        } else if (response.status === 404) {
+          errorMessage = 'Project not found. Please try again.'
+        } else if (response.status === 500) {
+          errorMessage = 'Server error occurred. Please try again later.'
+        }
+
+        throw new Error(errorMessage)
       }
 
       const blob = await response.blob()
@@ -55,7 +74,7 @@ export function useExport() {
       return { success: true }
     } catch (err) {
       console.error('Export error:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Export failed'
+      const errorMessage = err instanceof Error ? err.message : 'Export failed. Please try again.'
       setError(errorMessage)
       return { success: false, error: errorMessage }
     } finally {

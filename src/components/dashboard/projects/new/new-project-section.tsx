@@ -51,12 +51,11 @@ export default function NewProjectSection() {
         break
       }
 
-      // Check file type
+      // Check file type - only ZIP files allowed
       const isZip = file.name.toLowerCase().endsWith('.zip')
-      const isAudio = file.name.toLowerCase().match(/\.(wav)$/)
 
-      if (!isZip && !isAudio) {
-        errors.push(`${file.name}: Only WAV audio files and ZIP datasets are allowed`)
+      if (!isZip) {
+        errors.push(`${file.name}: Only ZIP datasets are allowed`)
         continue
       }
 
@@ -115,7 +114,7 @@ export default function NewProjectSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (uploadedFiles.length === 0) {
-      showSnackbar({ message: 'Add at least one WAV file or ZIP dataset to create a project.', variant: 'error' })
+      showSnackbar({ message: 'Add at least one ZIP dataset to create a project.', variant: 'error' })
       return
     }
 
@@ -228,7 +227,7 @@ export default function NewProjectSection() {
               <input
                 type="file"
                 multiple
-                accept=".wav,.zip"
+                accept=".zip"
                 onChange={handleFileUpload}
                 className="hidden"
                 id="file-upload"
@@ -239,7 +238,7 @@ export default function NewProjectSection() {
                   Click to upload files or drag and drop your dataset
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Supports WAV audio files or ZIP datasets
+                  Supports ZIP datasets only
                 </p>
               </label>
             </div>
@@ -258,10 +257,10 @@ export default function NewProjectSection() {
                 <div className="w-full bg-muted rounded-full h-2">
                   <div
                     className={`h-2 rounded-full transition-all duration-300 ${(uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) > 0.8
-                        ? 'bg-red-500'
-                        : (uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) > 0.6
-                          ? 'bg-yellow-500'
-                          : 'bg-primary'
+                      ? 'bg-red-500'
+                      : (uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) > 0.6
+                        ? 'bg-yellow-500'
+                        : 'bg-primary'
                       }`}
                     style={{
                       width: `${Math.min(
@@ -293,8 +292,8 @@ export default function NewProjectSection() {
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm text-text truncate">{file.name}</span>
                           <span className={`text-xs px-2 py-1 rounded-full ${isZip ? 'bg-blue-100 text-blue-800' :
-                              isAudio ? 'bg-green-100 text-green-800' :
-                                'bg-gray-100 text-gray-800'
+                            isAudio ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
                             }`}>
                             {isZip ? 'ZIP Dataset' : isAudio ? 'Audio File' : 'Unknown'}
                           </span>

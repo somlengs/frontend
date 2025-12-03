@@ -6,9 +6,10 @@ export interface AudioFile {
   name: string
   duration: string
   size: string
-  status: 'completed' | 'processing' | 'error'
+  status: 'pending' | 'completed' | 'processing' | 'error'
   transcription?: string
   createdAt: string
+  updatedAt?: string
   audioUrl?: string
 }
 
@@ -25,7 +26,7 @@ export function useFileUpload() {
     try {
       // Create FormData with files
       const formData = new FormData()
-      
+
       // Append each file with the key "files" (backend should expect this)
       // For multiple files, use the same key name
       files.forEach(file => {
@@ -34,7 +35,7 @@ export function useFileUpload() {
 
       // Use XMLHttpRequest for upload progress tracking
       const xhr = new XMLHttpRequest()
-      
+
       // Track upload progress
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {

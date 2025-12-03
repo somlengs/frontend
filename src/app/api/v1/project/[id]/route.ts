@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fetchBackend, getAuthHeaders } from '@/lib/api-client-server'
+import { fetchBackend } from '@/lib/api-client-server'
 import { BACKEND_API_ROUTES } from '@/lib/config'
 
 async function extractParams(params: { id: string } | Promise<{ id: string }>) {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { API_ROUTES } from '@/lib/config'
+import { useProjectEvents } from './use-project-events'
 
 // Helper to fetch file count for a project
 async function fetchFileCount(projectId: string): Promise<number> {
@@ -26,17 +27,64 @@ export interface Project {
   id: string
   name: string
   description: string
-  status: 'draft' | 'processing' | 'completed' | 'error'
+  status: 'loading' | 'pending' | 'processing' | 'completed' | 'error'
   audioFiles: number
   transcriptions: number
   createdAt: string
   lastModified: string
 }
 
-export function useProjects() {
+export function useProjects(enableSSE: boolean = true) {
   const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(true) // Start as true to show loading state initially
   const [error, setError] = useState<string | null>(null)
+
+  // Helper function to convert technical errors to user-friendly messages
+  // Helper function to convert technical errors to user-friendly messages
+  const getFriendlyErrorMessage = useCallback((error: unknown, context: string): string => {
+    // Check for specific error messages from backend
+    const errorObj = error as Record<string, unknown>
+    const errorMsg = (typeof errorObj?.message === 'string' ? errorObj.message : null) ||
+      (typeof errorObj?.error === 'string' ? errorObj.error : null) ||
+      String(error)
+
+    // Map common errors to friendly messages
+    if (errorMsg.includes('Invalid zip file') || errorMsg.includes('422')) {
+      return 'Please upload a valid ZIP file containing your audio files'
+    }
+    if (errorMsg.includes('403') || errorMsg.includes('Forbidden')) {
+      return 'You don\'t have permission to perform this action'
+    }
+    if (errorMsg.includes('404') || errorMsg.includes('Not Found')) {
+      return 'The requested resource was not found'
+    }
+    if (errorMsg.includes('401') || errorMsg.includes('Unauthorized')) {
+      return 'Your session has expired. Please sign in again'
+    }
+    if (errorMsg.includes('500') || errorMsg.includes('Internal Server Error')) {
+      return 'Something went wrong on our end. Please try again later'
+    }
+    if (errorMsg.includes('Network') || errorMsg.includes('network')) {
+      return 'Network error. Please check your connection and try again'
+    }
+
+    // Context-specific messages
+    if (context === 'create') {
+      return 'Unable to create project. Please check your files and try again'
+    }
+    if (context === 'export') {
+      return 'Unable to export dataset. Make sure you have completed files to export'
+    }
+    if (context === 'process') {
+      return 'Unable to start processing. Please make sure your project has files'
+    }
+    if (context === 'delete') {
+      return 'Unable to delete project. Please try again'
+    }
+
+    // Generic fallback
+    return `Something went wrong. Please try again`
+  }, [])
 
   const fetchProjects = useCallback(async () => {
     setIsLoading(true)
@@ -69,10 +117,6 @@ export function useProjects() {
         ? data
         : data?.projects || data?.data || []
 
-      // Debug: Log file counts from backend
-      rawProjects.forEach((p: unknown) => {
-        const proj = p as Record<string, unknown>
-      })
 
       // Format date to YYYY-MM-DD
       const formatDate = (dateString: string | null | undefined): string => {
@@ -89,28 +133,30 @@ export function useProjects() {
       let projectsList: Project[] = rawProjects.map((p: unknown) => {
         const proj = p as Record<string, unknown>
         // Normalise backend status values to our limited set
-        let status = (String(proj.status || 'draft')).toLowerCase()
+        let status = (String(proj.status || 'pending')).toLowerCase()
 
-        // Treat various in-progress states as "processing"
-        if (status === 'loading' || status === 'pending' || status === 'in_progress') {
+        // Keep pending as pending (waiting to be processed)
+        if (status === 'pending' || status === 'waiting') {
+          status = 'pending'
+        }
+        // Treat loading and in_progress as "processing"
+        else if (status === 'loading' || status === 'in_progress') {
           status = 'processing'
         }
-
         // Normalise completed-like states
-        if (status === 'done' || status === 'completed' || status === 'complete') {
+        else if (status === 'done' || status === 'completed' || status === 'complete') {
           status = 'completed'
         }
-
-        // Fallback to draft if we still don't recognise it
-        if (!['draft', 'processing', 'completed', 'error'].includes(status)) {
-          status = 'draft'
+        // Fallback to pending if we still don't recognise it
+        else if (!['loading', 'pending', 'processing', 'completed', 'error'].includes(status)) {
+          status = 'pending'
         }
 
         return {
           id: String(proj.id || proj.project_id || proj.id),
           name: String(proj.name || proj.project_name || 'Unnamed Project'),
           description: String(proj.description || proj.desc || ''),
-          status: status as 'draft' | 'processing' | 'completed' | 'error',
+          status: status as 'loading' | 'pending' | 'processing' | 'completed' | 'error',
           audioFiles: Number(proj.num_of_files ?? proj.audioFiles ?? proj.audio_files ?? proj.file_count ?? proj.files_count ?? 0),
           transcriptions: Number(proj.transcriptions || proj.transcription_count || 0),
           createdAt: formatDate(String(proj.created_at || proj.createdAt || proj.created)),
@@ -149,6 +195,36 @@ export function useProjects() {
       setIsLoading(false)
     }
   }, [])
+
+  // SSE event handlers
+  const handleProjectCreated = useCallback((project: Project) => {
+    console.log('[useProjects] Project created:', project)
+    setProjects(prev => {
+      // Check if project already exists
+      if (prev.some(p => p.id === project.id)) {
+        return prev
+      }
+      return [project, ...prev]
+    })
+  }, [])
+
+  const handleProjectUpdated = useCallback((project: Project) => {
+    console.log('[useProjects] Project updated:', project)
+    setProjects(prev => prev.map(p => p.id === project.id ? project : p))
+  }, [])
+
+  const handleProjectDeleted = useCallback((projectId: string) => {
+    console.log('[useProjects] Project deleted:', projectId)
+    setProjects(prev => prev.filter(p => p.id !== projectId))
+  }, [])
+
+  // Enable SSE for real-time updates
+  useProjectEvents({
+    enabled: enableSSE,
+    onProjectCreated: handleProjectCreated,
+    onProjectUpdated: handleProjectUpdated,
+    onProjectDeleted: handleProjectDeleted,
+  })
 
   const createProject = useCallback(async (data: { name?: string; description?: string; files?: File[] }) => {
     setIsLoading(true)
@@ -212,13 +288,13 @@ export function useProjects() {
       return { success: true, project: newProject }
     } catch (err: unknown) {
       console.error('Error creating project:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create project'
+      const errorMessage = getFriendlyErrorMessage(err, 'create')
       setError(errorMessage)
       return { success: false, error: errorMessage }
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [getFriendlyErrorMessage])
 
   const updateProject = useCallback(async (id: string, data: Partial<Project>) => {
     setIsLoading(true)
@@ -253,13 +329,13 @@ export function useProjects() {
 
       return { success: true }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update project'
+      const errorMessage = getFriendlyErrorMessage(err, 'update')
       setError(errorMessage)
       return { success: false, error: errorMessage }
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [getFriendlyErrorMessage])
 
   const getProject = useCallback(async (id: string) => {
     try {
@@ -325,6 +401,36 @@ export function useProjects() {
     }
   }, [])
 
+  const processProject = useCallback(async (projectId: string) => {
+    try {
+      const response = await fetch(API_ROUTES.PROJECTS.PROCESS(projectId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to start processing')
+      }
+
+      const data = await response.json()
+
+      // Refresh the projects list to get updated status
+      await fetchProjects()
+
+      return { success: true, message: data.detail }
+    } catch (err) {
+      const errorMessage = getFriendlyErrorMessage(err, 'process')
+      console.error('Error processing project:', err)
+      return {
+        success: false,
+        error: errorMessage
+      }
+    }
+  }, [fetchProjects, getFriendlyErrorMessage])
+
   // Load projects on mount
   useEffect(() => {
     fetchProjects()
@@ -339,6 +445,7 @@ export function useProjects() {
     createProject,
     updateProject,
     deleteProject,
+    processProject,
     clearError: () => setError(null)
   }
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { API_ROUTES } from '@/lib/config'
 import { AudioFile } from './use-file-upload'
+import { useFileEvents } from './use-file-events'
 export type { AudioFile }
 
 // Helper functions for data mapping
@@ -29,8 +30,11 @@ function formatDurationValue(value: number | null | undefined): string {
   return formatDuration(seconds)
 }
 
-function mapStatus(status: string): 'completed' | 'processing' | 'error' {
+function mapStatus(status: string): 'pending' | 'completed' | 'processing' | 'error' {
   const normalized = (status || '').toLowerCase()
+  if (normalized === 'pending' || normalized === 'waiting') {
+    return 'pending'
+  }
   if (normalized === 'completed' || normalized === 'finished' || normalized === 'done') {
     return 'completed'
   }
@@ -43,7 +47,7 @@ function mapStatus(status: string): 'completed' | 'processing' | 'error' {
   return 'processing' // default
 }
 
-export function useFiles(projectId: string) {
+export function useFiles(projectId: string, enableSSE: boolean = true) {
   const [files, setFiles] = useState<AudioFile[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -103,13 +107,19 @@ export function useFiles(projectId: string) {
           transcription,
           createdAt:
             file.created_at || file.createdAt || file.created || new Date().toISOString(),
+          updatedAt:
+            file.updated_at || file.updatedAt || file.updated || file.created_at || file.createdAt,
           audioUrl:
+            file.public_url ||
             file.audioUrl ||
             file.file_url ||
             file.url ||
             undefined,
         }
       })
+
+      // Sort by creation date (oldest first) to match backend processing order
+      mappedFiles.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
 
       setFiles(mappedFiles)
     } catch (err) {
@@ -119,6 +129,65 @@ export function useFiles(projectId: string) {
       setIsLoading(false)
     }
   }, [projectId])
+
+  // SSE event handlers
+  const handleFileCreated = useCallback((event: import('./use-file-events').FileEvent) => {
+    console.log('[useFiles] handleFileCreated called with event:', event)
+    console.log('[useFiles] File created:', event)
+
+    // Convert FileEvent to AudioFile format
+    const file: AudioFile = {
+      id: event.file_id || '',
+      name: event.file_name || 'Unknown',
+      duration: formatDurationValue(event.duration),
+      size: formatFileSize(event.file_size || 0),
+      status: mapStatus(event.transcription_status || 'processing'),
+      transcription: event.transcription_content || undefined,
+      createdAt: event.created_at || new Date().toISOString(),
+      updatedAt: event.updated_at || event.created_at || new Date().toISOString(),
+      audioUrl: event.public_url || undefined,
+    }
+
+    setFiles(prev => {
+      // Check if file already exists
+      if (prev.some(f => f.id === file.id)) {
+        return prev
+      }
+      return [...prev, file]
+    })
+  }, [])
+
+  const handleFileUpdated = useCallback((event: import('./use-file-events').FileEvent) => {
+    console.log('[useFiles] File updated:', event)
+
+    // Convert FileEvent to AudioFile format
+    const file: AudioFile = {
+      id: event.file_id || '',
+      name: event.file_name || 'Unknown',
+      duration: formatDurationValue(event.duration),
+      size: formatFileSize(event.file_size || 0),
+      status: mapStatus(event.transcription_status || 'processing'),
+      transcription: event.transcription_content || undefined,
+      createdAt: event.created_at || new Date().toISOString(),
+      updatedAt: event.updated_at || event.created_at || new Date().toISOString(),
+      audioUrl: event.public_url || undefined,
+    }
+
+    setFiles(prev => prev.map(f => f.id === file.id ? file : f))
+  }, [])
+
+  const handleFileDeleted = useCallback(() => {
+    console.log('[useFiles] File deleted, refetching...')
+    fetchFiles()
+  }, [fetchFiles])
+
+  // Enable SSE for real-time updates
+  useFileEvents(projectId, {
+    enabled: enableSSE,
+    onFileCreated: handleFileCreated,
+    onFileUpdated: handleFileUpdated,
+    onFileDeleted: handleFileDeleted,
+  })
 
   const updateFile = async (fileId: string, data: Partial<AudioFile>) => {
     setIsLoading(true)
@@ -130,7 +199,9 @@ export function useFiles(projectId: string) {
       if (data.name !== undefined) {
         backendData.file_name = data.name
       }
-      // Add other field mappings here if needed in the future
+      if (data.transcription !== undefined) {
+        backendData.transcription_content = data.transcription
+      }
 
       const response = await fetch(
         API_ROUTES.PROJECTS.FILES.UPDATE(projectId, fileId),
@@ -159,7 +230,9 @@ export function useFiles(projectId: string) {
         size: formatFileSize(updatedFile.file_size ?? updatedFile.size_bytes ?? updatedFile.size ?? 0),
         status: mapStatus(updatedFile.status || updatedFile.processing_status || updatedFile.transcription_status || 'processing'),
         transcription: updatedFile.transcription || updatedFile.transcription_text || updatedFile.transcription_content || updatedFile.transcriptions?.[0]?.data || null,
-        createdAt: updatedFile.created_at || updatedFile.createdAt || updatedFile.created || new Date().toISOString()
+        createdAt: updatedFile.created_at || updatedFile.createdAt || updatedFile.created || new Date().toISOString(),
+        updatedAt: updatedFile.updated_at || updatedFile.updatedAt || updatedFile.updated || updatedFile.created_at || updatedFile.createdAt,
+        audioUrl: updatedFile.audioUrl || updatedFile.file_url || updatedFile.url || updatedFile.public_url || undefined
       }
 
       setFiles(prev => prev.map(file =>
@@ -215,6 +288,10 @@ export function useFiles(projectId: string) {
     }
   }, [projectId, fetchFiles])
 
+  const updatePendingToProcessing = useCallback(() => {
+    setFiles(prev => prev.map(f => f.status === 'pending' ? { ...f, status: 'processing' } : f))
+  }, [])
+
   return {
     files,
     isLoading,
@@ -222,7 +299,7 @@ export function useFiles(projectId: string) {
     fetchFiles,
     updateFile,
     deleteFile,
+    updatePendingToProcessing,
     clearError: () => setError(null)
   }
 }
-

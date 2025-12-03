@@ -10,7 +10,6 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { useFiles } from '@/hooks/dashboard/use-files'
-import { Doodle } from '@/components/ui/doodle'
 import { useSnackbar } from '@/components/ui/snackbar-provider'
 import { AudioPlayerProvider } from '@/components/ui/audio-player'
 import {
@@ -72,6 +71,7 @@ export default function TranscriptionEditorSection() {
       setSelectedFileId(files[0].id)
       setTranscription(files[0].transcription || '')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileId, files]) // Removed selectedFileId to prevent loop
 
   const handleTranscriptionChange = (value: string) => {
@@ -151,7 +151,7 @@ export default function TranscriptionEditorSection() {
     <AudioPlayerProvider<TrackData>>
       <div className="flex flex-col h-[calc(100vh-4rem)] -m-6">
         {/* Top Bar - Navigation & Actions */}
-        <div className="h-14 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-6 shrink-0">
+        <div className="h-14 border-b border-border backdrop-blur  flex items-center justify-between px-6 shrink-0">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Link href="/dashboard" className="hover:text-text transition-colors">
               <Home className="w-4 h-4" />
@@ -173,7 +173,7 @@ export default function TranscriptionEditorSection() {
             >
               {isSaving ? (
                 <>
-                  <Doodle type="circle" className="w-4 h-4 mr-2" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-text mr-2"></div>
                   Saving...
                 </>
               ) : (
@@ -211,15 +211,6 @@ export default function TranscriptionEditorSection() {
             {/* Editor Area */}
             <div className="flex-1 overflow-y-auto p-8 flex justify-center">
               <div className="w-full max-w-3xl relative">
-                {isSaving && (
-                  <div className="absolute inset-0 bg-background/50 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
-                    <div className="flex flex-col items-center gap-3">
-                      <Doodle type="star" className="w-12 h-12 text-accent" />
-                      <p className="text-sm text-text font-medium">Saving...</p>
-                    </div>
-                  </div>
-                )}
-
                 <textarea
                   value={transcription}
                   onChange={(e) => handleTranscriptionChange(e.target.value)}

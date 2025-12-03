@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Home,
 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { BrushUnderline } from '@/components/ui/brush-underline'
 import { AudioFilesTable, AudioFile } from '@/components/ui/audio-files-table'
@@ -30,10 +31,8 @@ export default function ProjectDetailSection() {
   const params = useParams()
   const projectId = params?.id as string
 
-  const { getProject } = useProjects()
-  const { files: audioFiles, isLoading: filesLoading, fetchFiles, deleteFile, updateFile } = useFiles(projectId || '')
-  // const { startProcess, isProcessing, processStatus } = useProcess()
-  const [isProcessing, setIsProcessing] = useState(false)
+  const { getProject, processProject } = useProjects()
+  const { files: audioFiles, isLoading: filesLoading, fetchFiles, deleteFile, updateFile, updatePendingToProcessing } = useFiles(projectId || '')
   const { showSnackbar } = useSnackbar()
 
   const [project, setProject] = useState<Project | null>(null)
@@ -61,11 +60,21 @@ export default function ProjectDetailSection() {
 
         if (result.success && result.project) {
           // Map backend response to project format
+          let status = (result.project.status || 'pending').toLowerCase()
+
+          // Keep pending as pending
+          if (status === 'pending' || status === 'waiting') {
+            status = 'pending'
+          }
+          else if (status === 'loading' || status === 'in_progress') {
+            status = 'processing'
+          }
+
           const projectData = {
             id: result.project.id || result.project.project_id || projectId,
             name: result.project.name || result.project.project_name || 'Unnamed Project',
             description: result.project.description || result.project.desc || '',
-            status: (result.project.status || 'draft').toLowerCase() as 'draft' | 'processing' | 'completed' | 'error',
+            status: status as 'loading' | 'pending' | 'processing' | 'completed' | 'error',
             audioFiles: result.project.num_of_files ?? result.project.audioFiles ?? result.project.audio_files ?? 0,
             transcriptions: result.project.transcriptions || result.project.transcription_count || 0,
             createdAt: result.project.created_at || result.project.createdAt || result.project.created || '',
@@ -107,15 +116,54 @@ export default function ProjectDetailSection() {
   const totalCount = filteredFiles.length
   const paginatedFiles = filteredFiles.slice((page - 1) * pageSize, page * pageSize)
 
+  // Derive button state from file statuses
+  const hasProcessingFiles = audioFiles.some(f => f.status === 'processing')
+  const hasPendingFiles = audioFiles.filter(f => f.status === 'pending').length
+  const completedFiles = audioFiles.filter(f => f.status === 'completed').length
+
+  // Show completion snackbar when all files finish processing
+  useEffect(() => {
+    if (hasProcessingFiles) {
+      // Track that we started processing
+      sessionStorage.setItem(`processing_${projectId}`, 'true')
+    } else if (sessionStorage.getItem(`processing_${projectId}`) === 'true') {
+      // Processing just finished
+      sessionStorage.removeItem(`processing_${projectId}`)
+      if (completedFiles > 0) {
+        showSnackbar({
+          message: `Transcription complete! ${completedFiles} file${completedFiles > 1 ? 's' : ''} processed successfully`,
+          variant: 'success'
+        })
+      }
+    }
+  }, [hasProcessingFiles, completedFiles, projectId, showSnackbar])
+
   const handleProcessTranscription = async () => {
-    setIsProcessing(true)
-    // Simulate export process
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    if (!projectId) return
 
-    // Show success message
-    showSnackbar({ message: 'All files are successfully transcribed dumbass', variant: 'success' })
-    setIsProcessing(false)
+    // Immediately update UI - files go to processing state
+    updatePendingToProcessing()
 
+    try {
+      const result = await processProject(projectId)
+
+      if (!result.success) {
+        // Only show snackbar on error, revert optimistic update
+        await fetchFiles()
+        showSnackbar({
+          message: result.error || 'Failed to start processing',
+          variant: 'error'
+        })
+      }
+      // No success snackbar - user sees files processing immediately
+    } catch {
+      // Revert optimistic update on error
+      await fetchFiles()
+      showSnackbar({
+        message: 'An unexpected error occurred',
+        variant: 'error'
+      })
+    }
   }
 
   const handleDeleteDialogOpenChange = (open: boolean) => {
@@ -181,9 +229,10 @@ export default function ProjectDetailSection() {
     }
   }
 
-  // Only show loading for files table if we're actually loading AND haven't received any data yet
-  // Once loading is complete (filesLoading === false), show empty state if no files
-  const filesTableLoading = filesLoading
+  // Only show full loading state if we're loading AND not processing
+  // If we are processing, we want to show the table with skeletons
+  // We also need to wait for project to load so we know the expected file count
+  const filesTableLoading = (filesLoading || projectLoading) && !hasProcessingFiles
 
   return (
     <div className="space-y-6">
@@ -195,12 +244,20 @@ export default function ProjectDetailSection() {
               <Home className="w-4 h-4" />
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-text">{projectLoading ? 'Loading...' : (project?.name || 'Unnamed Project')}</span>
+            {projectLoading ? (
+              <Skeleton className="h-4 w-24" />
+            ) : (
+              <span className="text-text">{project?.name || 'Unnamed Project'}</span>
+            )}
           </div>
           <h1 className="text-3xl font-serif text-text">
-            <BrushUnderline variant="accent" animated>
-              {projectLoading ? 'Loading...' : (project?.name || 'Unnamed Project')}
-            </BrushUnderline>
+            {projectLoading ? (
+              <Skeleton className="h-8 w-48" />
+            ) : (
+              <BrushUnderline variant="accent" animated>
+                {project?.name || 'Unnamed Project'}
+              </BrushUnderline>
+            )}
           </h1>
           {/* <p className="text-muted-foreground mb-6">You haven&apos;t uploaded any audio files yet.</p> */}
         </div>
@@ -244,9 +301,9 @@ export default function ProjectDetailSection() {
             size="sm"
             className="bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={handleProcessTranscription}
-            disabled={isProcessing}
+            disabled={hasProcessingFiles || hasPendingFiles === 0}
           >
-            {isProcessing ? (
+            {hasProcessingFiles ? (
               <>
                 <div className="animate-spin bg-accent rounded-full h-4 w-4 border-b-2 border-text mr-2"></div>
                 Processing...
@@ -303,6 +360,19 @@ export default function ProjectDetailSection() {
         </div>
 
         <div className="flex-1 min-h-0 overflow-hidden grid" style={{ gridTemplateRows: '1fr auto' }}>
+          {/* Debug logging */}
+          {(() => {
+            console.log('[ProjectDetail] Render state:', {
+              filesLoading,
+              hasProcessingFiles,
+              projectStatus: project?.status,
+              audioFilesLength: audioFiles.length,
+              expectedFiles: project?.audioFiles,
+              filesTableLoading
+            })
+            return null
+          })()}
+
           <AudioFilesTable
             files={paginatedFiles as AudioFile[]}
             loading={filesTableLoading}

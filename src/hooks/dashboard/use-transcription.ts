@@ -10,7 +10,8 @@ export function useTranscription() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const saveTranscription = async (data: TranscriptionData) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const saveTranscription = async (_data: TranscriptionData) => {
     setIsSaving(true)
     setError(null)
 
@@ -30,7 +31,8 @@ export function useTranscription() {
     }
   }
 
-  const processTranscription = async (fileId: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const processTranscription = async (_fileId: string) => {
     setIsProcessing(true)
     setError(null)
 

@@ -36,14 +36,14 @@ import {
 } from '@/components/ui/dialog'
 
 const statusColors = {
-  draft: 'text-muted-foreground bg-muted',
+  pending: 'text-orange-600 bg-orange-50',
   processing: 'text-blue-600 bg-blue-50',
   completed: 'text-green-600 bg-green-50',
   error: 'text-red-600 bg-red-50'
 }
 
 const statusLabels = {
-  draft: 'Draft',
+  pending: 'Pending',
   processing: 'Processing',
   completed: 'Completed',
   error: 'Error'
@@ -167,15 +167,6 @@ export default function ProjectsSection() {
                           }`}
                       >
                         Completed
-                      </button>
-                      <button
-                        onClick={() => setFilterStatus('draft')}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${filterStatus === 'draft'
-                          ? 'bg-muted text-text'
-                          : 'text-muted-foreground hover:text-text hover:bg-muted/50'
-                          }`}
-                      >
-                        Draft
                       </button>
                     </div>
                   </div>
@@ -332,8 +323,8 @@ export default function ProjectsSection() {
 
                   {/* Bottom Row - Status and More Options */}
                   <div className="flex items-center justify-between">
-                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${statusColors[project.status as keyof typeof statusColors] || statusColors.draft}`}>
-                      {statusLabels[project.status as keyof typeof statusLabels] || statusLabels.draft}
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${statusColors[project.status as keyof typeof statusColors] || statusColors.pending}`}>
+                      {statusLabels[project.status as keyof typeof statusLabels] || statusLabels.pending}
                     </span>
 
                     {mounted && (

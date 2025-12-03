@@ -11,7 +11,7 @@ export interface Project {
   id: string
   name: string
   description: string
-  status: 'completed' | 'processing' | 'draft' | 'error'
+  status: 'loading' | 'pending' | 'processing' | 'completed' | 'error'
   audioFiles: number
   transcriptions: number
   createdAt: string
@@ -19,6 +19,11 @@ export interface Project {
 }
 
 const statusConfig = {
+  pending: {
+    label: 'Pending',
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
+    icon: Clock
+  },
   completed: {
     label: 'Completed',
     color: 'bg-green-100 text-green-800 border-green-200',
@@ -28,11 +33,6 @@ const statusConfig = {
     label: 'Processing',
     color: 'bg-blue-100 text-blue-800 border-blue-200',
     icon: Clock
-  },
-  draft: {
-    label: 'Draft',
-    color: 'bg-gray-100 text-gray-800 border-gray-200',
-    icon: FileText
   },
   error: {
     label: 'Error',
@@ -80,19 +80,7 @@ export function ProjectsTable({
     }
   ]
 
-  const isEmpty = projects.length === 0
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center w-full min-h-[60vh]">
-        <GooeyLoader
-          primaryColor="var(--color-accent)"
-          secondaryColor="var(--accent-foreground)"
-          borderColor="var(--border)"
-        />
-      </div>
-    )
-  }
+  const isEmpty = projects.length === 0 && !loading
 
   return (
     <div className="bg-bg border border-border rounded-lg overflow-hidden">
@@ -120,19 +108,19 @@ export function ProjectsTable({
                 <th className="text-left py-3 px-4 text-sm font-medium text-bg">Project</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-bg">Status</th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-bg">Files</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-bg">Created</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-bg">Last Modified</th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-bg"></th>
               </tr>
             </thead>
             <tbody>
               {projects.map((project) => {
-                // Get status config with fallback to draft if status is unknown
-                const status = statusConfig[project.status as keyof typeof statusConfig] || statusConfig.draft
+                // Get status config with fallback to pending if status is unknown
+                const status = statusConfig[project.status as keyof typeof statusConfig] || statusConfig.pending
                 const StatusIcon = status.icon
                 return (
                   <tr
                     key={project.id}
-                    className="cursor-pointer group hover:bg-muted/50 border-b transition-colors"
+                    className="cursor-pointer group hover:bg-muted/50 border-b transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300"
                     onClick={() => onProjectClick?.(project)}
                   >
                     <td className="py-3 px-4">
@@ -165,7 +153,7 @@ export function ProjectsTable({
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right text-sm text-text">{project.audioFiles ?? 0}</td>
-                    <td className="py-3 px-4 text-sm text-text">{project.createdAt || 'N/A'}</td>
+                    <td className="py-3 px-4 text-sm text-text">{new Date(project.lastModified || project.createdAt).toLocaleDateString()}</td>
                     <td className="py-3 px-4 text-right">
                       <Popover>
                         <PopoverTrigger asChild>
@@ -203,6 +191,28 @@ export function ProjectsTable({
                   </tr>
                 )
               })}
+
+              {/* Loading Skeletons */}
+              {loading && Array.from({ length: 5 }).map((_, i) => (
+                <tr key={`skeleton-${i}`} className="border-b animate-pulse">
+                  <td className="py-3 px-4">
+                    <div className="space-y-2">
+                      <div className="h-5 w-48 bg-muted/50 rounded"></div>
+                      <div className="h-3 w-32 bg-muted/50 rounded"></div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="h-6 w-24 bg-muted/50 rounded-full"></div>
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    <div className="h-4 w-8 bg-muted/50 rounded ml-auto"></div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="h-4 w-24 bg-muted/50 rounded"></div>
+                  </td>
+                  <td className="py-3 px-4"></td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

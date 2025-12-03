@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fetchBackend, getAuthHeaders } from '@/lib/api-client-server'
+import { fetchBackend } from '@/lib/api-client-server'
 import { BACKEND_API_ROUTES } from '@/lib/config'
 
 // POST /api/v1/project/[id]/process - Process the transcription
@@ -9,13 +9,11 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const body = await request.json()
 
     const response = await fetchBackend(
       BACKEND_API_ROUTES.PROJECTS.PROCESS(id),
       {
         method: 'POST',
-        body: JSON.stringify(body),
       }
     )
 

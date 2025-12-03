@@ -7,14 +7,22 @@ import { TextShimmerWave } from '@/components/ui/text-shimmer-wave'
 import { BrushUnderlineBold } from '@/components/ui/brush-underline'
 import { Header } from '@/components/ui/navbar'
 import { useSignIn } from '@/hooks'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { createClient } from '@/lib/supabase/client'
 
 export default function SignInSection() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [formError, setFormError] = useState<string | null>(null)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetMessage, setResetMessage] = useState<string | null>(null)
   const { signIn, isLoading } = useSignIn()
+  const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError(null)
 
     const result = await signIn({ email, password })
 
@@ -23,8 +31,43 @@ export default function SignInSection() {
       // Let middleware handle the redirect by refreshing the page
       window.location.href = '/dashboard'
     } else {
-      // Handle error (error is already set in the hook)
-      console.error('Sign in failed:', result.error)
+      // Handle different error scenarios
+      const errorMsg = result.error || 'Sign in failed'
+
+      // Check for specific error types
+      if (errorMsg.toLowerCase().includes('email not confirmed')) {
+        setFormError('Please verify your email address. Check your inbox for the verification link.')
+      } else if (errorMsg.toLowerCase().includes('invalid') || errorMsg.toLowerCase().includes('credentials')) {
+        setFormError('Invalid email or password. Please check your credentials and try again.')
+      } else {
+        setFormError(errorMsg)
+      }
+    }
+  }
+
+  const handleForgotPassword = async () => {
+    if (!resetEmail) {
+      setResetMessage('Please enter your email address')
+      return
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+
+      if (error) {
+        setResetMessage(error.message)
+      } else {
+        setResetMessage('Password reset link sent! Check your email.')
+        setTimeout(() => {
+          setShowForgotPassword(false)
+          setResetEmail('')
+          setResetMessage(null)
+        }, 3000)
+      }
+    } catch {
+      setResetMessage('Failed to send reset email. Please try again.')
     }
   }
 
@@ -56,9 +99,10 @@ export default function SignInSection() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setFormError(null); }}
                   required
-                  className="w-full px-4 py-3 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
+                  className={`w-full px-4 py-3 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors ${formError ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-ring focus:border-transparent'
+                    }`}
                   placeholder="Enter your email"
                 />
               </div>
@@ -72,31 +116,30 @@ export default function SignInSection() {
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setFormError(null); }}
                   required
-                  className="w-full px-4 py-3 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
+                  className={`w-full px-4 py-3 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors ${formError ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-ring focus:border-transparent'
+                    }`}
                   placeholder="Enter your password"
                 />
               </div>
 
-              {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember"
-                    type="checkbox"
-                    className="h-4 w-4 text-primary focus:ring-ring border-input rounded"
-                  />
-                  <label htmlFor="remember" className="ml-2 text-sm text-foreground">
-                    Remember me
-                  </label>
+              {/* Error Message */}
+              {formError && (
+                <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm">
+                  <p className="font-medium">⚠️ {formError}</p>
                 </div>
-                <Link
-                  href="#"
+              )}
+
+              {/* Forgot Password Link */}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setShowForgotPassword(true); setResetEmail(email); }}
                   className="text-sm text-primary hover:text-primary/80 transition-colors"
                 >
                   Forgot password?
-                </Link>
+                </button>
               </div>
 
               {/* Sign In Button */}
@@ -173,6 +216,64 @@ export default function SignInSection() {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we&apos;ll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {resetMessage && (
+              <div className={`px-4 py-3 rounded-md text-sm ${resetMessage.includes('sent')
+                ? 'bg-green-50 border border-green-200 text-green-800'
+                : 'bg-red-50 border border-red-200 text-red-800'
+                }`}>
+                <p className="font-medium">
+                  {resetMessage.includes('sent') ? '✅' : '⚠️'} {resetMessage}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="reset-email" className="block text-sm font-medium text-foreground mb-2">
+                Email Address
+              </label>
+              <input
+                id="reset-email"
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
+                placeholder="Enter your email"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowForgotPassword(false)
+                setResetEmail('')
+                setResetMessage(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleForgotPassword}
+              className="bg-accent text-text hover:bg-accent/90"
+            >
+              Send Reset Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

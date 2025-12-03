@@ -17,6 +17,8 @@ export default function SignUpSection() {
     confirmPassword: '',
     agreeToTerms: false
   })
+  const [formError, setFormError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const router = useRouter()
   const { signUp, isLoading } = useSignUp()
 
@@ -26,19 +28,55 @@ export default function SignUpSection() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
+    // Clear errors when user types
+    setFormError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError(null)
+    setSuccessMessage(null)
+
+    // Client-side validation
+    if (formData.password !== formData.confirmPassword) {
+      setFormError('Passwords do not match. Please try again.')
+      return
+    }
+
+    if (formData.password.length < 6) {
+      setFormError('Password must be at least 6 characters long.')
+      return
+    }
 
     const result = await signUp(formData)
 
     if (result.success) {
-      // Redirect to dashboard after successful signup
-      router.push('/dashboard')
+      // Show success message about email verification
+      setSuccessMessage('Account created successfully! Please check your email to verify your account before signing in.')
+      // Clear form
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        agreeToTerms: false
+      })
+      // Redirect to signin after 3 seconds
+      setTimeout(() => {
+        router.push('/signin')
+      }, 3000)
     } else {
-      // Handle error (error is already set in the hook)
-      console.error('Sign up failed:', result.error)
+      // Handle different error scenarios
+      const errorMsg = result.error || 'Sign up failed'
+
+      if (errorMsg.toLowerCase().includes('already registered') || errorMsg.toLowerCase().includes('already exists')) {
+        setFormError('This email is already registered. Please sign in instead.')
+      } else if (errorMsg.toLowerCase().includes('invalid email')) {
+        setFormError('Please enter a valid email address.')
+      } else {
+        setFormError(errorMsg)
+      }
     }
   }
 
@@ -61,6 +99,19 @@ export default function SignUpSection() {
           {/* Sign Up Form */}
           <div className="bg-card border border-border rounded-lg p-8 shadow-lg">
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Success Message */}
+              {successMessage && (
+                <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-md text-sm">
+                  <p className="font-medium">✅ {successMessage}</p>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {formError && (
+                <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm">
+                  <p className="font-medium">⚠️ {formError}</p>
+                </div>
+              )}
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -74,7 +125,8 @@ export default function SignUpSection() {
                     value={formData.firstName}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
+                    className={`w-full px-4 py-3 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors ${formError ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-ring focus:border-transparent'
+                      }`}
                     placeholder="First name"
                   />
                 </div>
@@ -89,7 +141,8 @@ export default function SignUpSection() {
                     value={formData.lastName}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
+                    className={`w-full px-4 py-3 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors ${formError ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-ring focus:border-transparent'
+                      }`}
                     placeholder="Last name"
                   />
                 </div>
@@ -107,7 +160,8 @@ export default function SignUpSection() {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
+                  className={`w-full px-4 py-3 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors ${formError ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-ring focus:border-transparent'
+                    }`}
                   placeholder="Enter your email"
                 />
               </div>
@@ -124,8 +178,10 @@ export default function SignUpSection() {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
-                  placeholder="Create a password"
+                  minLength={6}
+                  className={`w-full px-4 py-3 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors ${formError ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-ring focus:border-transparent'
+                    }`}
+                  placeholder="Create a password (min. 6 characters)"
                 />
               </div>
 
@@ -141,7 +197,8 @@ export default function SignUpSection() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
+                  className={`w-full px-4 py-3 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors ${formError ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-ring focus:border-transparent'
+                    }`}
                   placeholder="Confirm your password"
                 />
               </div>
@@ -158,14 +215,7 @@ export default function SignUpSection() {
                   className="h-4 w-4 text-primary focus:ring-ring border-input rounded mt-1"
                 />
                 <label htmlFor="agreeToTerms" className="ml-2 text-sm text-foreground">
-                  I agree to the{' '}
-                  <Link href="#" className="text-primary hover:text-primary/80 transition-colors">
-                    Terms of Service
-                  </Link>
-                  {' '}and{' '}
-                  <Link href="#" className="text-primary hover:text-primary/80 transition-colors">
-                    Privacy Policy
-                  </Link>
+                  I agree to the Terms of Service and Privacy Policy
                 </label>
               </div>
 

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Download } from 'lucide-react'
+import { SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { AudioFile } from '@/hooks/dashboard/use-files'
 import {
@@ -12,7 +12,6 @@ import {
     AudioPlayerItem,
     useAudioPlayer,
 } from '@/components/ui/audio-player'
-import { cn } from '@/lib/utils'
 
 type TrackData = {
     id: string
@@ -59,7 +58,7 @@ export function StudioPlayer({ file, onNext, onPrev, hasNext, hasPrev }: StudioP
         : undefined
 
     return (
-        <div className="w-full bg-card/80 backdrop-blur-md border-b border-border/50 sticky top-0 z-10 shadow-sm">
+        <div className="w-full backdrop-blur-md border-b border-border/50 sticky top-0 z-10 shadow-sm">
             <div className="max-w-5xl mx-auto px-6 py-4">
                 <div className="flex flex-col gap-4">
                     {/* Top Row: Controls & Info */}
