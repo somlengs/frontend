@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fetchBackend } from '@/lib/api-client-server'
 import { BACKEND_API_ROUTES } from '@/lib/config'
 
+export const runtime = 'edge'
+
 async function extractParams(params: { id: string } | Promise<{ id: string }>) {
   return typeof (params as Record<string, unknown>).then === 'function' ? await params : (params as { id: string })
 }

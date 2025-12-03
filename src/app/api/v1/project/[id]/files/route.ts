@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fetchBackend, getAuthHeaders } from '@/lib/api-client-server'
 import { BACKEND_API_ROUTES, API_CONFIG } from '@/lib/config'
 
+export const runtime = 'edge'
+
 // GET /api/v1/project/[id]/files - Get all files
 export async function GET(
   request: NextRequest,

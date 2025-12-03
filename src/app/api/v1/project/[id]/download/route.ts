@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fetchBackend } from '@/lib/api-client-server'
 import { BACKEND_API_ROUTES } from '@/lib/config'
 
+export const runtime = 'edge'
+
 // GET /api/v1/project/[id]/download - Download project dataset
 export async function GET(
     request: NextRequest,

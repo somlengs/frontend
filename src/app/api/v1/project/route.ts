@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fetchBackend, getAuthHeaders } from '@/lib/api-client-server'
 import { API_CONFIG, BACKEND_API_ROUTES } from '@/lib/config'
 
+export const runtime = 'edge'
+
 // GET /api/v1/project - Fetch all projects
 export async function GET() {
   try {
