@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fetchBackend } from '@/lib/api-client-server'
 import { BACKEND_API_ROUTES } from '@/lib/config'
 
-export const runtime = 'edge'
 
 // PATCH /api/v1/project/[id]/files/[fileId] - Edit file
 export async function PATCH(

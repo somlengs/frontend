@@ -5,7 +5,6 @@ export const metadata = {
     description: 'Reset your Somleng account password',
 }
 
-export const runtime = 'edge'
 
 export default function ResetPasswordPage() {
     return <ResetPasswordSection />
