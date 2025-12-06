@@ -22,9 +22,8 @@ export interface UseProjectEventsOptions {
 export function useProjectEvents(options: UseProjectEventsOptions = {}) {
     const { enabled = true, onProjectCreated, onProjectUpdated, onProjectDeleted } = options
 
-    // Call backend directly - Amplify doesn't support SSE proxying
-    // Token will be passed as query param (backend accepts it)
-    const url = `${API_CONFIG.BASE_URL}/v1/project/events`
+    // Use Next.js API proxy to keep auth tokens in headers (server-side)
+    const url = '/api/v1/project/events'
 
     const { isConnected, lastMessage } = useSSE<ProjectEvent>(url, {
         enabled,

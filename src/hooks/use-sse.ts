@@ -66,13 +66,11 @@ export function useSSE<T = unknown>(
         const abortController = new AbortController()
         abortControllerRef.current = abortController
 
-        // Append token as query parameter for backend SSE endpoint
-        const urlWithToken = `${url}${url.includes('?') ? '&' : '?'}token=${session.access_token}`
-
         console.log('[SSE] Connecting to', url)
 
-        const response = await fetch(urlWithToken, {
+        const response = await fetch(url, {
           headers: {
+            'Authorization': `Bearer ${session.access_token}`,
             'Accept': 'text/event-stream',
           },
           signal: abortController.signal,
