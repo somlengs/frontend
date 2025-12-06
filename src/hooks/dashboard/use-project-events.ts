@@ -22,7 +22,9 @@ export interface UseProjectEventsOptions {
 export function useProjectEvents(options: UseProjectEventsOptions = {}) {
     const { enabled = true, onProjectCreated, onProjectUpdated, onProjectDeleted } = options
 
-    const url = `${API_CONFIG.BASE_URL}/v1/project/events`
+    // Use Next.js API proxy instead of calling backend directly
+    // This keeps auth tokens in headers (server-side) instead of URL params
+    const url = '/api/v1/project/events'
 
     const { isConnected, lastMessage } = useSSE<ProjectEvent>(url, {
         enabled,
