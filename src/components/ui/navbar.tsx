@@ -1,22 +1,27 @@
 'use client'
 import Link from 'next/link'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import { Equal, X } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave'
 import React from 'react'
 import { cn } from '@/lib/utils'
 
-const menuItems = [
-    { name: 'Products', href: '#link' },
+// const menuItems = [
+//     { name: 'Products', href: '#link' },
 
-    { name: 'Pricing', href: '#link' },
-    { name: 'About', href: '#link' },
-]
+//     { name: 'Pricing', href: '#link' },
+//     { name: 'About', href: '#link' },
+// ]
 
 export const Header = () => {
+    const pathname = usePathname()
     const [menuState, setMenuState] = React.useState(false)
     const [isScrolled, setIsScrolled] = React.useState(false)
+
+    // Hide auth buttons on signin/signup pages
+    const isAuthPage = pathname === '/signin' || pathname === '/signup'
 
     React.useEffect(() => {
         const handleScroll = () => {
@@ -58,7 +63,7 @@ export const Header = () => {
 
                         <div className="absolute inset-0 m-auto hidden size-fit lg:block">
                             <ul className="flex gap-8 text-base">
-                                {menuItems.map((item, index) => (
+                                {/* {menuItems.map((item, index) => (
                                     <li key={index}>
                                         <Link
                                             href={item.href}
@@ -66,14 +71,14 @@ export const Header = () => {
                                             <span>{item.name}</span>
                                         </Link>
                                     </li>
-                                ))}
+                                ))} */}
                             </ul>
                         </div>
 
                         <div className="bg-bg in-data-[state=active]:block lg:in-data-[state=active]:flex mb-6 hidden w-full flex-wrap items-center justify-end space-y-8 rounded-3xl border p-6 shadow-2xl shadow-zinc-300/20 md:flex-nowrap lg:m-0 lg:flex lg:w-fit lg:gap-6 lg:space-y-0 lg:border-transparent lg:bg-transparent lg:p-0 lg:shadow-none dark:shadow-none dark:lg:bg-transparent">
                             <div className="lg:hidden">
                                 <ul className="space-y-6 text-base">
-                                    {menuItems.map((item, index) => (
+                                    {/* {menuItems.map((item, index) => (
                                         <li key={index}>
                                             <Link
                                                 href={item.href}
@@ -81,44 +86,48 @@ export const Header = () => {
                                                 <span>{item.name}</span>
                                             </Link>
                                         </li>
-                                    ))}
+                                    ))} */}
                                 </ul>
                             </div>
                             <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-2 sm:space-y-0 md:w-fit">
 
-                                <Button
-                                    asChild
-                                    variant="outline"
-                                    size="default"
-                                    className={cn(isScrolled && 'lg:hidden')}>
-                                    <Link href="/signin" className="group relative">
-                                        <span className="group-hover:hidden">Login</span>
-                                        <span className="hidden group-hover:inline-block">
-                                            <TextShimmerWave
-                                                waveOnly={true}
-                                                fontSize="1.1rem"
-                                            >
-                                                Login
-                                            </TextShimmerWave>
-                                        </span>
-                                    </Link>
-                                </Button>
-                                <Button
-                                    asChild
-                                    size="default"
-                                    className={`${cn(isScrolled && 'lg:hidden')} bg-accent text-text`}>
-                                    <Link href="/signup" className="group relative">
-                                        <span className="group-hover:hidden">Sign Up</span>
-                                        <span className="hidden group-hover:inline-block">
-                                            <TextShimmerWave
-                                                waveOnly={true}
-                                                fontSize="1.1rem"
-                                            >
-                                                Sign Up
-                                            </TextShimmerWave>
-                                        </span>
-                                    </Link>
-                                </Button>
+                                {pathname !== '/signin' && (
+                                    <Button
+                                        asChild
+                                        variant="outline"
+                                        size="default"
+                                        className={cn(isScrolled && 'lg:hidden')}>
+                                        <Link href="/signin" className="group relative">
+                                            <span className="group-hover:hidden">Login</span>
+                                            <span className="hidden group-hover:inline-block">
+                                                <TextShimmerWave
+                                                    waveOnly={true}
+                                                    fontSize="1.1rem"
+                                                >
+                                                    Login
+                                                </TextShimmerWave>
+                                            </span>
+                                        </Link>
+                                    </Button>
+                                )}
+                                {pathname !== '/signup' && (
+                                    <Button
+                                        asChild
+                                        size="default"
+                                        className={`${cn(isScrolled && 'lg:hidden')} bg-accent text-text`}>
+                                        <Link href="/signup" className="group relative">
+                                            <span className="group-hover:hidden">Sign Up</span>
+                                            <span className="hidden group-hover:inline-block">
+                                                <TextShimmerWave
+                                                    waveOnly={true}
+                                                    fontSize="1.1rem"
+                                                >
+                                                    Sign Up
+                                                </TextShimmerWave>
+                                            </span>
+                                        </Link>
+                                    </Button>
+                                )}
                                 {/* <Button
                                     asChild
                                     variant="outline"
@@ -136,22 +145,24 @@ export const Header = () => {
                                         </span>
                                     </Link>
                                 </Button> */}
-                                <Button
-                                    asChild
-                                    size="default"
-                                    className={cn(isScrolled ? 'lg:inline-flex' : 'hidden')}>
-                                    <Link href="/signup" className="group relative">
-                                        <span className="group-hover:hidden">Get Started</span>
-                                        <span className="hidden group-hover:inline-block">
-                                            <TextShimmerWave
-                                                waveOnly={true}
-                                                fontSize="1.1rem"
-                                            >
-                                                Get Started
-                                            </TextShimmerWave>
-                                        </span>
-                                    </Link>
-                                </Button>
+                                {!isAuthPage && (
+                                    <Button
+                                        asChild
+                                        size="default"
+                                        className={cn(isScrolled ? 'lg:inline-flex' : 'hidden')}>
+                                        <Link href="/signup" className="group relative">
+                                            <span className="group-hover:hidden">Get Started</span>
+                                            <span className="hidden group-hover:inline-block">
+                                                <TextShimmerWave
+                                                    waveOnly={true}
+                                                    fontSize="1.1rem"
+                                                >
+                                                    Get Started
+                                                </TextShimmerWave>
+                                            </span>
+                                        </Link>
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>

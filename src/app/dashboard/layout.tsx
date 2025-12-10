@@ -73,10 +73,10 @@ export default function DashboardLayout({
           onClick={() => setSidebarOpen(false)}
         />
         <div className={cn(
-          "fixed inset-y-0 left-0 w-64 bg-bg shadow-xl transition-transform duration-300 ease-out",
+          "fixed inset-y-0 left-0 w-64 bg-bg shadow-xl transition-transform duration-300 ease-out flex flex-col",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}>
-          <div className="flex items-center justify-between p-4">
+          <div className="flex items-center justify-between p-4 shrink-0">
             <Link href="/dashboard" className="flex items-center gap-2">
               <Image src="/logo.png" alt="Somleng" width={32} height={32} className="w-8 h-8 border rounded-md" />
               <span className="font-semibold text-lg text-text">Somleng</span>
@@ -85,27 +85,63 @@ export default function DashboardLayout({
               <X className="w-6 h-6" />
             </button>
           </div>
-          <nav className="p-4 space-y-2">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md transition-colors font-bold",
-                    isActive
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  )}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <item.icon className="w-5 h-5" />
-                  {item.name}
-                </Link>
-              )
-            })}
-          </nav>
+
+          <div className="flex-1 flex flex-col overflow-hidden p-4">
+            <div className="space-y-2">
+              {navigation.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm",
+                      isActive
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    )}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.name}
+                  </Link>
+                )
+              })}
+            </div>
+
+            {/* User Profile and Sign Out - Mobile */}
+            <div className="mt-auto pt-4 border-t border-border shrink-0">
+              {user && (
+                <div className="mb-4 px-3 py-2 bg-muted/50 rounded-md">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
+                      {user?.email?.[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {user.user_metadata?.first_name && user.user_metadata?.last_name
+                          ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
+                          : user.user_metadata?.first_name || user.email?.split('@')[0]
+                        }
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={handleSignOut}
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 

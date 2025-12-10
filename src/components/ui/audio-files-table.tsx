@@ -54,6 +54,8 @@ interface AudioFilesTableProps {
   emptyActionLabel?: string
   onEmptyAction?: () => void
   loading?: boolean
+  currentPage?: number
+  itemsPerPage?: number
 }
 
 export function AudioFilesTable({
@@ -67,7 +69,9 @@ export function AudioFilesTable({
   emptyDescription = 'Upload audio files to process and generate transcriptions.',
   emptyActionLabel = 'Upload Files',
   onEmptyAction,
-  loading = false
+  loading = false,
+  currentPage = 1,
+  itemsPerPage = 20
 }: AudioFilesTableProps) {
   const [editingFileId, setEditingFileId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
@@ -103,6 +107,11 @@ export function AudioFilesTable({
     } else if (e.key === 'Escape') {
       handleCancelEdit()
     }
+  }
+
+  // Calculate global row number across pages
+  const getGlobalIndex = (localIndex: number) => {
+    return (currentPage - 1) * itemsPerPage + localIndex + 1
   }
 
   const actions = [
@@ -170,7 +179,7 @@ export function AudioFilesTable({
                       className="cursor-pointer group hover:bg-muted/50 border-b transition-colors"
                       onClick={() => editingFileId !== file.id && onFileClick?.(file)}
                     >
-                      <td className="py-3 px-4 text-right text-sm text-text">{index + 1}</td>
+                      <td className="py-3 px-4 text-right text-sm text-text">{getGlobalIndex(index)}</td>
                       <td className="py-3 px-4" onClick={(e) => editingFileId === file.id && e.stopPropagation()}>
                         {editingFileId === file.id ? (
                           <div className="flex items-center gap-2">

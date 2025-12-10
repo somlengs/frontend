@@ -118,7 +118,8 @@ export default function ProjectDetailSection() {
 
   // Derive button state from file statuses
   const hasProcessingFiles = audioFiles.some(f => f.status === 'processing')
-  const hasPendingFiles = audioFiles.filter(f => f.status === 'pending').length
+  const hasPendingFiles = audioFiles.some(f => f.status === 'pending')
+  const allFilesCompleted = audioFiles.length > 0 && audioFiles.every(f => f.status === 'completed')
   const completedFiles = audioFiles.filter(f => f.status === 'completed').length
 
   // Show completion snackbar when all files finish processing
@@ -280,16 +281,32 @@ export default function ProjectDetailSection() {
             </Link>
           </button>
 
-          <Button
-            size="sm"
-            className="bg-accent text-text hover:bg-accent/90"
-            asChild
-          >
-            <Link href={`/dashboard/projects/${projectId}/export`}>
-              <Download className="w-4 h-4 mr-2" />
-              Export Dataset
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            {!allFilesCompleted && (
+              <span className="text-xs text-muted-foreground bg-muted px-2 lg:py-2 sm:py-1 rounded-md">
+                {completedFiles}/{audioFiles.length} completed
+              </span>
+            )}
+            <Button
+              size="sm"
+              className="bg-accent text-text hover:bg-accent/90"
+              asChild={allFilesCompleted}
+              disabled={!allFilesCompleted}
+              title={!allFilesCompleted ? 'All files must be completed before exporting' : ''}
+            >
+              {allFilesCompleted ? (
+                <Link href={`/dashboard/projects/${projectId}/export`}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Dataset
+                </Link>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Dataset
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -301,7 +318,7 @@ export default function ProjectDetailSection() {
             size="sm"
             className="bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={handleProcessTranscription}
-            disabled={hasProcessingFiles || hasPendingFiles === 0}
+            disabled={hasProcessingFiles || !hasPendingFiles}
           >
             {hasProcessingFiles ? (
               <>
@@ -383,6 +400,8 @@ export default function ProjectDetailSection() {
             onRename={handleRenameFile}
             stickyHeader={true}
             maxHeight="550px"
+            currentPage={page}
+            itemsPerPage={pageSize}
           />
           {/* Pagination */}
           <div className="flex justify-between items-center pt-3">

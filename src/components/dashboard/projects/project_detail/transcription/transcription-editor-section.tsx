@@ -9,7 +9,9 @@ import {
   Home,
 } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useFiles } from '@/hooks/dashboard/use-files'
+import { useProjects, Project } from '@/hooks/dashboard/use-projects'
 import { useSnackbar } from '@/components/ui/snackbar-provider'
 import { AudioPlayerProvider } from '@/components/ui/audio-player'
 import {
@@ -36,8 +38,11 @@ export default function TranscriptionEditorSection() {
   const fileId = params?.fileId as string
 
   const { files, updateFile, isLoading: filesLoading } = useFiles(projectId || '')
+  const { getProject } = useProjects()
   const { showSnackbar } = useSnackbar()
 
+  const [project, setProject] = useState<Project | null>(null)
+  const [projectLoading, setProjectLoading] = useState(true)
   const [selectedFileId, setSelectedFileId] = useState(fileId || '')
   const [transcription, setTranscription] = useState('')
   const [hasChanges, setHasChanges] = useState(false)
@@ -47,6 +52,27 @@ export default function TranscriptionEditorSection() {
   const [pendingFileId, setPendingFileId] = useState<string | null>(null)
 
   const selectedFile = files.find(f => f.id === selectedFileId) || files[0]
+
+  // Fetch project data for breadcrumb
+  useEffect(() => {
+    if (!projectId) {
+      setProjectLoading(false)
+      return
+    }
+
+    const loadProject = async () => {
+      try {
+        const result = await getProject(projectId)
+        if (result.success && result.project) {
+          setProject(result.project as Project)
+        }
+      } finally {
+        setProjectLoading(false)
+      }
+    }
+
+    loadProject()
+  }, [projectId, getProject])
 
   // Update transcription when file is selected or files are loaded
   useEffect(() => {
@@ -157,9 +183,13 @@ export default function TranscriptionEditorSection() {
               <Home className="w-4 h-4" />
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <Link href={`/dashboard/projects/${projectId}`} className="hover:text-text transition-colors">
-              Project
-            </Link>
+            {projectLoading ? (
+              <Skeleton className="h-4 w-24" />
+            ) : (
+              <Link href={`/dashboard/projects/${projectId}`} className="hover:text-text transition-colors">
+                {project?.name || 'Project'}
+              </Link>
+            )}
             <ChevronRight className="w-4 h-4" />
             <span className="text-text font-medium">Transcription</span>
           </div>
@@ -194,6 +224,7 @@ export default function TranscriptionEditorSection() {
               selectedFileId={selectedFileId}
               onSelect={handleFileSelect}
               currentPlayingId={selectedFileId} // Simple assumption for now
+              isLoading={filesLoading}
             />
           </div>
 
@@ -214,7 +245,7 @@ export default function TranscriptionEditorSection() {
                 <textarea
                   value={transcription}
                   onChange={(e) => handleTranscriptionChange(e.target.value)}
-                  className="w-full h-full min-h-[500px] p-8 bg-card border border-border/50 rounded-xl shadow-sm text-lg leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none font-serif"
+                  className="w-full min-h-[500px] p-8 bg-card border border-border/50 rounded-xl shadow-sm text-lg leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none font-serif"
                   placeholder="Start typing your transcription here..."
                   spellCheck={false}
                   disabled={filesLoading}

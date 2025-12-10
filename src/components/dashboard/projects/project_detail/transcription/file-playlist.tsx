@@ -4,6 +4,8 @@ import React, { useState } from 'react'
 import { Search, CheckCircle, Clock, AlertCircle, Play, Pause } from 'lucide-react'
 import { AudioFile } from '@/hooks/dashboard/use-files'
 import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
+import { AudioPlayerButton, AudioPlayerItem, useAudioPlayer } from '@/components/ui/audio-player'
 
 type FilePlaylistProps = {
     files: AudioFile[]
@@ -11,6 +13,7 @@ type FilePlaylistProps = {
     onSelect: (fileId: string) => void
     isPlaying?: boolean
     currentPlayingId?: string
+    isLoading?: boolean
 }
 
 const statusConfig = {
@@ -34,6 +37,7 @@ export function FilePlaylist({
     onSelect,
     isPlaying = false,
     currentPlayingId,
+    isLoading = false,
 }: FilePlaylistProps) {
     const [searchQuery, setSearchQuery] = useState('')
 
@@ -63,64 +67,97 @@ export function FilePlaylist({
 
             {/* File List */}
             <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                {filteredFiles.map((file) => {
-                    const status = statusConfig[file.status as keyof typeof statusConfig] || statusConfig.processing
-                    const StatusIcon = status.icon
-                    const isSelected = file.id === selectedFileId
-                    const isPlayingCurrent = currentPlayingId === file.id && isPlaying
-
-                    return (
-                        <button
-                            key={file.id}
-                            onClick={() => onSelect(file.id)}
-                            className={cn(
-                                'w-full text-left p-3 rounded-lg transition-all duration-200 group relative overflow-hidden',
-                                isSelected
-                                    ? 'bg-accent text-accent-foreground shadow-sm'
-                                    : 'hover:bg-accent/10 text-muted-foreground hover:text-text'
-                            )}
-                        >
-                            {/* Active Indicator Bar */}
-                            {isSelected && (
-                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
-                            )}
-
+                {isLoading ? (
+                    // Loading skeleton
+                    Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="p-3 rounded-lg">
                             <div className="flex items-center gap-3">
-                                {/* Status/Play Icon */}
-                                <div className={cn(
-                                    "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors",
-                                    isSelected ? "bg-background/20" : "bg-background/50 group-hover:bg-background"
-                                )}>
-                                    {isPlayingCurrent ? (
-                                        <Pause className="w-4 h-4" />
-                                    ) : isSelected ? (
-                                        <Play className="w-4 h-4 ml-0.5" />
-                                    ) : (
-                                        <StatusIcon className={cn("w-4 h-4", status.color)} />
-                                    )}
+                                <Skeleton className="h-8 w-8 rounded-full" />
+                                <div className="flex-1 space-y-2">
+                                    <Skeleton className="h-4 w-3/4" />
+                                    <Skeleton className="h-3 w-1/2" />
                                 </div>
+                            </div>
+                        </div>
+                    ))
+                ) : filteredFiles.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+                        <p className="text-sm">No files found</p>
+                    </div>
+                ) : (
+                    filteredFiles.map((file, index) => {
+                        const isSelected = file.id === selectedFileId
+                        const isPlayingCurrent = currentPlayingId === file.id && isPlaying
 
-                                {/* File Info */}
-                                <div className="flex-1 min-w-0">
-                                    <h3 className={cn(
-                                        "text-sm font-medium truncate",
-                                        isSelected ? "text-accent-foreground" : "text-text"
-                                    )}>
-                                        {file.name}
-                                    </h3>
-                                    <div className={cn(
-                                        "flex items-center gap-2 text-xs mt-0.5",
-                                        isSelected ? "text-accent-foreground/70" : "text-muted-foreground"
-                                    )}>
-                                        <span>{file.duration}</span>
-                                        <span>•</span>
-                                        <span>{file.size}</span>
+                        const audioItem: AudioPlayerItem = {
+                            id: file.id,
+                            src: file.audioUrl || '',
+                            data: {
+                                id: file.id,
+                                name: file.name,
+                                url: file.audioUrl || '',
+                            },
+                        }
+
+                        const handlePlayClick = (e: React.MouseEvent) => {
+                            e.stopPropagation()
+                            // If clicking on a different file, switch to it first
+                            if (!isSelected) {
+                                onSelect(file.id)
+                            }
+                        }
+
+                        return (
+                            <div key={file.id} className="group/song relative">
+                                <div
+                                    onClick={() => onSelect(file.id)}
+                                    className={cn(
+                                        'h-10 w-full justify-start px-3 font-normal sm:h-9 sm:px-2 rounded-md transition-colors cursor-pointer',
+                                        isSelected
+                                            ? 'bg-secondary'
+                                            : 'hover:bg-accent hover:text-accent-foreground'
+                                    )}
+                                >
+                                    <div className="flex w-full items-center gap-3 h-full">
+                                        {/* Track Number / Play Icon */}
+                                        <div
+                                            className="flex w-5 shrink-0 items-center justify-center"
+                                            onClick={handlePlayClick}
+                                        >
+                                            {isSelected && isPlayingCurrent ? (
+                                                <AudioPlayerButton
+                                                    item={audioItem}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-4 w-4 p-0 hover:bg-transparent sm:h-3.5 sm:w-3.5"
+                                                />
+                                            ) : isSelected ? (
+                                                <AudioPlayerButton
+                                                    item={audioItem}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-4 w-4 p-0 hover:bg-transparent sm:h-3.5 sm:w-3.5"
+                                                />
+                                            ) : (
+                                                <>
+                                                    <span className="text-muted-foreground/60 text-sm tabular-nums group-hover/song:invisible">
+                                                        {index + 1}
+                                                    </span>
+                                                    <Play className="invisible absolute h-4 w-4 group-hover/song:visible sm:h-3.5 sm:w-3.5" />
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {/* File Info */}
+                                        <div className="flex-1 min-w-0 text-left">
+                                            <span className="truncate text-sm block">{file.name}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </button>
-                    )
-                })}
+                        )
+                    })
+                )}
             </div>
         </div>
     )

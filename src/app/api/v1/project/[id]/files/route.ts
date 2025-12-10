@@ -11,8 +11,13 @@ export async function GET(
   try {
     const { id } = await params
 
+    // Forward query parameters to backend
+    const searchParams = request.nextUrl.searchParams
+    const queryString = searchParams.toString()
+    const backendUrl = BACKEND_API_ROUTES.PROJECTS.FILES.LIST(id) + (queryString ? `?${queryString}` : '')
+
     const response = await fetchBackend(
-      BACKEND_API_ROUTES.PROJECTS.FILES.LIST(id),
+      backendUrl,
       { method: 'GET' }
     )
 

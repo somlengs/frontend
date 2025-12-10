@@ -19,6 +19,7 @@ export function useSettings() {
     const [email, setEmail] = useState('')
 
     // Password states
+    const [oldPassword, setOldPassword] = useState('')
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
 
@@ -69,6 +70,10 @@ export function useSettings() {
     }
 
     const updatePassword = async () => {
+        if (!oldPassword) {
+            return { success: false, error: 'Current password is required' }
+        }
+
         if (newPassword !== confirmPassword) {
             return { success: false, error: 'Passwords do not match' }
         }
@@ -82,12 +87,25 @@ export function useSettings() {
 
         try {
             const supabase = createClient()
+
+            // First verify the old password by attempting to sign in
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: oldPassword
+            })
+
+            if (signInError) {
+                throw new Error('Current password is incorrect')
+            }
+
+            // If verification successful, update to new password
             const { error } = await supabase.auth.updateUser({
                 password: newPassword
             })
 
             if (error) throw error
 
+            setOldPassword('')
             setNewPassword('')
             setConfirmPassword('')
             return { success: true }
@@ -111,6 +129,8 @@ export function useSettings() {
         lastName,
         setLastName,
         email,
+        oldPassword,
+        setOldPassword,
         newPassword,
         setNewPassword,
         confirmPassword,

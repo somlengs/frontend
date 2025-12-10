@@ -59,7 +59,11 @@ export function useFiles(projectId: string, enableSSE: boolean = true) {
     setError(null)
 
     try {
-      const response = await fetch(API_ROUTES.PROJECTS.FILES.LIST(projectId), {
+      // Add limit parameter to get all files (backend defaults to 20)
+      const baseUrl = API_ROUTES.PROJECTS.FILES.LIST(projectId)
+      const url = `${baseUrl}?limit=1000&page=1`
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

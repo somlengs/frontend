@@ -17,6 +17,8 @@ export default function SettingsSection() {
         lastName,
         setLastName,
         email,
+        oldPassword,
+        setOldPassword,
         newPassword,
         setNewPassword,
         confirmPassword,
@@ -133,6 +135,16 @@ export default function SettingsSection() {
                 </div>
 
                 <form onSubmit={handleUpdatePassword} className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-text">Current Password</label>
+                        <Input
+                            type="password"
+                            value={oldPassword}
+                            onChange={(e) => setOldPassword(e.target.value)}
+                            placeholder="••••••••"
+                        />
+                    </div>
+
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-text">New Password</label>
                         <Input
