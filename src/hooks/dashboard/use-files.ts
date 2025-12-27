@@ -30,10 +30,13 @@ function formatDurationValue(value: number | null | undefined): string {
   return formatDuration(seconds)
 }
 
-function mapStatus(status: string): 'pending' | 'completed' | 'processing' | 'error' {
+function mapStatus(status: string): 'pending' | 'completed' | 'processing' | 'error' | 'queued' {
   const normalized = (status || '').toLowerCase()
   if (normalized === 'pending' || normalized === 'waiting') {
     return 'pending'
+  }
+  if (normalized === 'queued') {
+    return 'queued'
   }
   if (normalized === 'completed' || normalized === 'finished' || normalized === 'done') {
     return 'completed'
@@ -44,7 +47,8 @@ function mapStatus(status: string): 'pending' | 'completed' | 'processing' | 'er
   if (normalized === 'error' || normalized === 'failed') {
     return 'error'
   }
-  return 'processing' // default
+  // Default to pending (not processing) to match backend initial state
+  return 'pending'
 }
 
 export function useFiles(projectId: string, enableSSE: boolean = true) {
@@ -52,16 +56,18 @@ export function useFiles(projectId: string, enableSSE: boolean = true) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchFiles = useCallback(async () => {
+  const fetchFiles = useCallback(async (silent = false) => {
     if (!projectId) return
 
-    setIsLoading(true)
+    if (!silent) {
+      setIsLoading(true)
+    }
     setError(null)
 
     try {
-      // Add limit parameter to get all files (backend defaults to 20)
+      // Fetch files without limit - use backend's default pagination
       const baseUrl = API_ROUTES.PROJECTS.FILES.LIST(projectId)
-      const url = `${baseUrl}?limit=1000&page=1`
+      const url = baseUrl
 
       const response = await fetch(url, {
         method: 'GET',
@@ -76,7 +82,10 @@ export function useFiles(projectId: string, enableSSE: boolean = true) {
       }
 
       const data = await response.json()
-      const rawFiles = data.files || data.data || (Array.isArray(data) ? data : [])
+
+      // Backend returns paginated response: { data: [...], pagination: {...} }
+      // Also support legacy formats for backwards compatibility
+      const rawFiles = data.data || data.files || (Array.isArray(data) ? data : [])
 
       // Map backend response to frontend AudioFile format
       const mappedFiles: AudioFile[] = rawFiles.map((f: unknown) => {
@@ -90,9 +99,11 @@ export function useFiles(projectId: string, enableSSE: boolean = true) {
           file.transcriptions?.[0]?.data ||
           null
 
-        let status = mapStatus(
-          file.status || file.processing_status || file.transcription_status || 'processing',
-        )
+        // Backend returns 'transcription_status', prioritize it first
+        const rawStatus = file.transcription_status || file.status || file.processing_status || 'pending'
+        let status = mapStatus(rawStatus)
+
+
 
         // If we already have a transcription but backend status is still "processing",
         // treat it as completed for UX purposes.
@@ -122,22 +133,23 @@ export function useFiles(projectId: string, enableSSE: boolean = true) {
         }
       })
 
-      // Sort by creation date (oldest first) to match backend processing order
-      mappedFiles.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      // Keep files in backend order (no sorting needed)
+      // All files get processed anyway, order is cosmetic
 
       setFiles(mappedFiles)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch files'
       setError(errorMessage)
     } finally {
-      setIsLoading(false)
+      if (!silent) {
+        setIsLoading(false)
+      }
     }
   }, [projectId])
 
   // SSE event handlers
   const handleFileCreated = useCallback((event: import('./use-file-events').FileEvent) => {
-    console.log('[useFiles] handleFileCreated called with event:', event)
-    console.log('[useFiles] File created:', event)
+
 
     // Convert FileEvent to AudioFile format
     const file: AudioFile = {
@@ -162,7 +174,7 @@ export function useFiles(projectId: string, enableSSE: boolean = true) {
   }, [])
 
   const handleFileUpdated = useCallback((event: import('./use-file-events').FileEvent) => {
-    console.log('[useFiles] File updated:', event)
+
 
     // Convert FileEvent to AudioFile format
     const file: AudioFile = {
@@ -181,13 +193,13 @@ export function useFiles(projectId: string, enableSSE: boolean = true) {
   }, [])
 
   const handleFileDeleted = useCallback(() => {
-    console.log('[useFiles] File deleted, refetching...')
+
     fetchFiles()
   }, [fetchFiles])
 
-  // Enable SSE for real-time updates
+  // Disable SSE for now - use manual refresh or polling instead
   useFileEvents(projectId, {
-    enabled: enableSSE,
+    enabled: false, // Disabled to reduce API calls
     onFileCreated: handleFileCreated,
     onFileUpdated: handleFileUpdated,
     onFileDeleted: handleFileDeleted,
@@ -277,7 +289,6 @@ export function useFiles(projectId: string, enableSSE: boolean = true) {
 
       return { success: true }
     } catch (err: unknown) {
-      console.error('Error deleting file:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete file'
       setError(errorMessage)
       return { success: false, error: errorMessage }
@@ -291,6 +302,21 @@ export function useFiles(projectId: string, enableSSE: boolean = true) {
       fetchFiles()
     }
   }, [projectId, fetchFiles])
+
+  // Smart polling: Auto-refresh every 5s when files are processing
+  useEffect(() => {
+    const hasProcessingFiles = files.some(f => f.status === 'processing')
+
+    if (!hasProcessingFiles || !projectId) return
+
+    const interval = setInterval(() => {
+      fetchFiles()
+    }, 5000) // Poll every 5 seconds
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [files, projectId, fetchFiles])
 
   const updatePendingToProcessing = useCallback(() => {
     setFiles(prev => prev.map(f => f.status === 'pending' ? { ...f, status: 'processing' } : f))

@@ -13,7 +13,7 @@ export interface AudioFile {
   name: string
   duration: string
   size: string
-  status: 'pending' | 'completed' | 'processing' | 'error'
+  status: 'pending' | 'completed' | 'processing' | 'error' | 'queued'
   transcription: string | null
   createdAt: string
   updatedAt?: string
@@ -23,6 +23,11 @@ const statusConfig = {
   pending: {
     label: 'Pending',
     color: 'bg-orange-100 text-orange-800 border-orange-200',
+    icon: Clock
+  },
+  queued: {
+    label: 'Queued',
+    color: 'bg-purple-100 text-purple-800 border-purple-200',
     icon: Clock
   },
   completed: {

@@ -24,6 +24,7 @@ export function useSSE<T = unknown>(
   const isConnectingRef = useRef(false)
   const mountedRef = useRef(true)
   const onErrorRef = useRef(onError)
+  const reconnectAttemptsRef = useRef(0) // Track reconnection attempts
 
   // Update onError ref when it changes
   useEffect(() => {
@@ -88,6 +89,7 @@ export function useSSE<T = unknown>(
         if (mountedRef.current) {
           setIsConnected(true)
           isConnectingRef.current = false
+          reconnectAttemptsRef.current = 0 // Reset attempts on successful connection
         }
 
         // Read the stream
@@ -132,8 +134,15 @@ export function useSSE<T = unknown>(
             console.log('[SSE] Connection aborted')
             return
           }
-          // Network errors are expected during reconnection, log as info instead of error
-          console.log('[SSE] Connection interrupted:', error.message, '- will reconnect in', reconnectInterval / 1000, 'seconds')
+
+          // Exponential backoff: 3s, 6s, 12s, 24s, max 30s
+          reconnectAttemptsRef.current++
+          const backoffTime = Math.min(
+            reconnectInterval * Math.pow(2, reconnectAttemptsRef.current - 1),
+            30000 // Max 30 seconds
+          )
+
+          console.log('[SSE] Connection interrupted:', error.message, `- will reconnect in ${backoffTime / 1000}s (attempt ${reconnectAttemptsRef.current})`)
           onErrorRef.current?.(error)
         }
 
@@ -141,14 +150,19 @@ export function useSSE<T = unknown>(
           setIsConnected(false)
           isConnectingRef.current = false
 
-          // Attempt to reconnect
+          // Attempt to reconnect with exponential backoff
           if (enabled && !abortControllerRef.current?.signal.aborted) {
+            const backoffTime = Math.min(
+              reconnectInterval * Math.pow(2, reconnectAttemptsRef.current - 1),
+              30000
+            )
+
             reconnectTimeoutRef.current = setTimeout(() => {
               if (mountedRef.current) {
                 console.log('[SSE] Attempting to reconnect...')
                 connect()
               }
-            }, reconnectInterval)
+            }, backoffTime)
           }
         }
       }

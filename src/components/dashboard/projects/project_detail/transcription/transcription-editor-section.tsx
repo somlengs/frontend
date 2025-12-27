@@ -175,26 +175,27 @@ export default function TranscriptionEditorSection() {
 
   return (
     <AudioPlayerProvider<TrackData>>
-      <div className="flex flex-col h-[calc(100vh-4rem)] -m-6">
+      <div className="flex flex-col h-[calc(100vh-4rem)] -m-6 sm:-m-6 -mx-4 sm:mx-0">
         {/* Top Bar - Navigation & Actions */}
-        <div className="h-14 border-b border-border backdrop-blur  flex items-center justify-between px-6 shrink-0">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Link href="/dashboard" className="hover:text-text transition-colors">
+        <div className="h-14 border-b border-border backdrop-blur flex items-center justify-between px-4 sm:px-6 shrink-0">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground overflow-hidden">
+            <Link href="/dashboard" className="hover:text-text transition-colors shrink-0">
               <Home className="w-4 h-4" />
             </Link>
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4 shrink-0" />
             {projectLoading ? (
               <Skeleton className="h-4 w-24" />
             ) : (
-              <Link href={`/dashboard/projects/${projectId}`} className="hover:text-text transition-colors">
+              <Link href={`/dashboard/projects/${projectId}`} className="hover:text-text transition-colors truncate max-w-[100px] sm:max-w-none">
                 {project?.name || 'Project'}
               </Link>
             )}
-            <ChevronRight className="w-4 h-4" />
-            <span className="text-text font-medium">Transcription</span>
+            <ChevronRight className="w-4 h-4 shrink-0" />
+            <span className="text-text font-medium hidden sm:inline">Transcription</span>
+            <span className="text-text font-medium sm:hidden">Edit</span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Button
               size="sm"
               className="bg-accent text-text hover:bg-accent/90"
@@ -204,26 +205,27 @@ export default function TranscriptionEditorSection() {
               {isSaving ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-text mr-2"></div>
-                  Saving...
+                  <span className="hidden sm:inline">Saving...</span>
+                  <span className="sm:hidden">Saving</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
+                  <Save className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Save Changes</span>
                 </>
               )}
             </Button>
           </div>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left Sidebar - Playlist */}
-          <div className="w-80 shrink-0 h-full">
+        <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+          {/* Left Sidebar - Playlist (Hidden on mobile, shown on desktop) */}
+          <div className="hidden lg:block w-80 shrink-0 h-full">
             <FilePlaylist
               files={files}
               selectedFileId={selectedFileId}
               onSelect={handleFileSelect}
-              currentPlayingId={selectedFileId} // Simple assumption for now
+              currentPlayingId={selectedFileId}
               isLoading={filesLoading}
             />
           </div>
@@ -240,12 +242,12 @@ export default function TranscriptionEditorSection() {
             />
 
             {/* Editor Area */}
-            <div className="flex-1 overflow-y-auto p-8 flex justify-center">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center">
               <div className="w-full max-w-3xl relative">
                 <textarea
                   value={transcription}
                   onChange={(e) => handleTranscriptionChange(e.target.value)}
-                  className="w-full min-h-[500px] p-8 bg-card border border-border/50 rounded-xl shadow-sm text-lg leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none font-serif"
+                  className="w-full min-h-[500px] p-4 sm:p-8 bg-card border border-border/50 rounded-xl shadow-sm text-base sm:text-lg leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none font-serif"
                   placeholder="Start typing your transcription here..."
                   spellCheck={false}
                   disabled={filesLoading}

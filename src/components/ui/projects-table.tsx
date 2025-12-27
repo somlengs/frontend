@@ -102,9 +102,10 @@ export function ProjectsTable({
         </div>
       ) : (
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full caption-bottom text-sm">
+          <table className="w-full caption-bottom text-sm" style={{ minWidth: '600px' }}>
             <thead className="bg-text">
               <tr>
+                <th className="text-left py-3 px-4 text-sm font-medium text-bg w-12">#</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-bg">Project</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-bg">Status</th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-bg">Files</th>
@@ -113,7 +114,7 @@ export function ProjectsTable({
               </tr>
             </thead>
             <tbody>
-              {projects.map((project) => {
+              {projects.map((project, index) => {
                 // Get status config with fallback to pending if status is unknown
                 const status = statusConfig[project.status as keyof typeof statusConfig] || statusConfig.pending
                 const StatusIcon = status.icon
@@ -123,6 +124,7 @@ export function ProjectsTable({
                     className="cursor-pointer group hover:bg-muted/50 border-b transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300"
                     onClick={() => onProjectClick?.(project)}
                   >
+                    <td className="py-3 px-4 text-right text-sm text-muted-foreground">{index + 1}</td>
                     <td className="py-3 px-4">
                       <div>
                         <div className="text-md font-medium text-text  ">{project.name || 'Unnamed Project'}</div>
@@ -195,6 +197,9 @@ export function ProjectsTable({
               {/* Loading Skeletons */}
               {loading && Array.from({ length: 5 }).map((_, i) => (
                 <tr key={`skeleton-${i}`} className="border-b animate-pulse">
+                  <td className="py-3 px-4 text-right">
+                    <div className="h-4 w-4 bg-muted/50 rounded ml-auto"></div>
+                  </td>
                   <td className="py-3 px-4">
                     <div className="space-y-2">
                       <div className="h-5 w-48 bg-muted/50 rounded"></div>

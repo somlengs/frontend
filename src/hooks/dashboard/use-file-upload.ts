@@ -6,7 +6,7 @@ export interface AudioFile {
   name: string
   duration: string
   size: string
-  status: 'pending' | 'completed' | 'processing' | 'error'
+  status: 'pending' | 'completed' | 'processing' | 'error' | 'queued'
   transcription?: string
   createdAt: string
   updatedAt?: string

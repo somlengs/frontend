@@ -14,7 +14,10 @@ import {
   FolderOpen,
   FileText,
   WifiOff,
-  RefreshCw
+  RefreshCw,
+  CheckCircle,
+  Clock,
+  AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/liquid-glass-button'
 import { BrushUnderline } from '@/components/ui/brush-underline'
@@ -36,10 +39,10 @@ import {
 } from '@/components/ui/dialog'
 
 const statusColors = {
-  pending: 'text-orange-600 bg-orange-50',
-  processing: 'text-blue-600 bg-blue-50',
-  completed: 'text-green-600 bg-green-50',
-  error: 'text-red-600 bg-red-50'
+  pending: 'bg-orange-100 text-orange-800 border-orange-200',
+  processing: 'bg-blue-100 text-blue-800 border-blue-200',
+  completed: 'bg-green-100 text-green-800 border-green-200',
+  error: 'bg-red-100 text-red-800 border-red-200'
 }
 
 const statusLabels = {
@@ -105,29 +108,29 @@ export default function ProjectsSection() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 sm:px-0">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-serif text-text">
+        <h1 className="text-2xl sm:text-3xl font-serif text-text">
           <BrushUnderline variant="accent" animated>Your Projects</BrushUnderline>
         </h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="mt-2 text-sm sm:text-base text-muted-foreground">
           Manage your speech datasets and transcriptions
         </p>
       </div>
 
       {/* Projects List */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+            <div className="relative flex-1 sm:flex-initial">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 type="text"
                 placeholder="Search for a project..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-80 focus:ring-0 focus:ring-offset-0 focus:outline-none focus:border-border focus:shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none focus-visible:border-border focus-visible:shadow-none"
+                className="pl-10 w-full sm:w-80 focus:ring-0 focus:ring-offset-0 focus:outline-none focus:border-border focus:shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none focus-visible:border-border focus-visible:shadow-none"
               />
             </div>
             {mounted && (
@@ -197,12 +200,13 @@ export default function ProjectsSection() {
             </div>
             <Button
               size="sm"
-              className="bg-text text-bg hover:bg-text/90"
+              className="bg-text text-bg hover:bg-text/90 whitespace-nowrap"
               asChild
             >
               <Link href="/dashboard/projects/new" className="flex items-center gap-2">
                 <FolderOpen className="w-4 h-4" />
-                Create Project
+                <span className="hidden sm:inline">Create Project</span>
+                <span className="sm:hidden">Create</span>
               </Link>
             </Button>
           </div>
@@ -249,12 +253,28 @@ export default function ProjectsSection() {
         ) : (
           // Grid View - Simplified Cards
           isLoading ? (
-            <div className="flex items-center justify-center w-full min-h-[60vh]">
-              <GooeyLoader
-                primaryColor="var(--color-accent)"
-                secondaryColor="var(--accent-foreground)"
-                borderColor="var(--border)"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={`skeleton-${i}`}
+                  className="bg-bg border border-border rounded-lg p-5 min-h-[140px] flex flex-col animate-pulse"
+                >
+                  {/* Title skeleton */}
+                  <div className="flex-1 mb-4">
+                    <div className="h-5 w-3/4 bg-muted/50 rounded mb-2"></div>
+                    <div className="h-4 w-full bg-muted/50 rounded mb-1"></div>
+                    <div className="h-4 w-2/3 bg-muted/50 rounded"></div>
+                  </div>
+
+                  {/* Bottom row skeleton */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-24 bg-muted/50 rounded-full"></div>
+                      <div className="h-6 w-12 bg-muted/50 rounded-md"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : hasError ? (
             <div className="flex items-center justify-center w-full min-h-[60vh]">
@@ -321,11 +341,32 @@ export default function ProjectsSection() {
                     </p>
                   </div>
 
-                  {/* Bottom Row - Status and More Options */}
-                  <div className="flex items-center justify-between">
-                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${statusColors[project.status as keyof typeof statusColors] || statusColors.pending}`}>
-                      {statusLabels[project.status as keyof typeof statusLabels] || statusLabels.pending}
-                    </span>
+                  {/* Bottom Row - File Count, Status Badge and More Options */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      {project.status === 'processing' ? (
+                        <div className="relative w-24 h-7">
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 origin-left scale-[0.5]">
+                            <GooeyLoader
+                              primaryColor="#6EA8FE"
+                              secondaryColor="#CFE0FF"
+                              borderColor="#DBEAFE"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${statusColors[project.status as keyof typeof statusColors] || statusColors.pending}`}>
+                          {project.status === 'completed' && <CheckCircle className="w-3 h-3" />}
+                          {project.status === 'pending' && <Clock className="w-3 h-3" />}
+                          {project.status === 'error' && <AlertCircle className="w-3 h-3" />}
+                          {statusLabels[project.status as keyof typeof statusLabels] || statusLabels.pending}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-muted/50 text-muted-foreground">
+                        <FileText className="w-3 h-3" />
+                        {project.audioFiles ?? 0}
+                      </span>
+                    </div>
 
                     {mounted && (
                       <Popover>

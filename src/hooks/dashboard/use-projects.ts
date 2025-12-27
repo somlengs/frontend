@@ -34,10 +34,16 @@ export interface Project {
   lastModified: string
 }
 
-export function useProjects(enableSSE: boolean = true) {
+export function useProjects(enableSSE: boolean = true, page: number = 1, limit: number = 20) {
   const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(true) // Start as true to show loading state initially
   const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState<{
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  } | null>(null)
 
   // Helper function to convert technical errors to user-friendly messages
   // Helper function to convert technical errors to user-friendly messages
@@ -91,12 +97,7 @@ export function useProjects(enableSSE: boolean = true) {
     setError(null)
 
     try {
-      const response = await fetch(API_ROUTES.PROJECTS.LIST, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
+      const response = await fetch(`${API_ROUTES.PROJECTS.LIST}?page=${page}&limit=${limit}`)
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -116,6 +117,17 @@ export function useProjects(enableSSE: boolean = true) {
       const rawProjects = Array.isArray(data)
         ? data
         : data?.projects || data?.data || []
+
+      // Extract pagination metadata
+      const paginationData = data.pagination || null
+      if (paginationData) {
+        setPagination({
+          page: paginationData.page || page,
+          limit: paginationData.limit || limit,
+          total: paginationData.total || rawProjects.length,
+          totalPages: paginationData.totalPages || Math.ceil(rawProjects.length / limit)
+        })
+      }
 
 
       // Format date to YYYY-MM-DD
@@ -194,7 +206,7 @@ export function useProjects(enableSSE: boolean = true) {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [page, limit])
 
   // SSE event handlers
   const handleProjectCreated = useCallback((project: Project) => {
@@ -218,9 +230,9 @@ export function useProjects(enableSSE: boolean = true) {
     setProjects(prev => prev.filter(p => p.id !== projectId))
   }, [])
 
-  // Enable SSE for real-time updates
+  // Disable SSE for now - use manual refresh instead
   useProjectEvents({
-    enabled: enableSSE,
+    enabled: false, // Disabled to reduce API calls
     onProjectCreated: handleProjectCreated,
     onProjectUpdated: handleProjectUpdated,
     onProjectDeleted: handleProjectDeleted,
@@ -431,8 +443,14 @@ export function useProjects(enableSSE: boolean = true) {
     }
   }, [fetchProjects, getFriendlyErrorMessage])
 
-  // Load projects on mount
+  // Load projects on mount (unless explicitly disabled)
   useEffect(() => {
+    // Skip auto-fetch if we're only using specific functions (getProject, processProject)
+    // This prevents unnecessary API calls on project detail pages
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/projects/') && !window.location.pathname.endsWith('/projects')) {
+      // We're on a specific project page, skip auto-fetch
+      return
+    }
     fetchProjects()
   }, [fetchProjects])
 
@@ -440,6 +458,7 @@ export function useProjects(enableSSE: boolean = true) {
     projects,
     isLoading,
     error,
+    pagination,
     fetchProjects,
     getProject,
     createProject,

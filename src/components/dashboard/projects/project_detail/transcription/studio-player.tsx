@@ -86,7 +86,13 @@ export function StudioPlayer({ file, onNext, onPrev, hasNext, hasPrev }: StudioP
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => setIsMuted(!isMuted)}
+                                onClick={() => {
+                                    const newMutedState = !isMuted
+                                    setIsMuted(newMutedState)
+                                    if (player.ref.current) {
+                                        player.ref.current.muted = newMutedState
+                                    }
+                                }}
                                 className="text-muted-foreground hover:text-text"
                             >
                                 {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}

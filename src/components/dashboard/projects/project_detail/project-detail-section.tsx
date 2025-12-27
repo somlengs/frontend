@@ -51,6 +51,7 @@ export default function ProjectDetailSection() {
     }
 
     let cancelled = false
+    let pollInterval: NodeJS.Timeout | null = null
 
     const loadProject = async () => {
       setProjectLoading(true)
@@ -67,6 +68,9 @@ export default function ProjectDetailSection() {
             status = 'pending'
           }
           else if (status === 'loading' || status === 'in_progress') {
+            status = 'loading'  // Keep as 'loading', don't map to 'processing'
+          }
+          else if (status === 'processing') {
             status = 'processing'
           }
 
@@ -81,6 +85,38 @@ export default function ProjectDetailSection() {
             lastModified: result.project.updated_at || result.project.lastModified || result.project.updated || result.project.created_at || result.project.createdAt || ''
           }
           setProject(projectData)
+
+          if (status === 'loading' && !cancelled) {
+            pollInterval = setInterval(async () => {
+              // Fetch files in SILENT mode (no loading skeleton)
+              await fetchFiles(true)
+
+              // Check if project finished loading
+              const pollResult = await getProject(projectId)
+              if (pollResult.success && pollResult.project) {
+                const pollStatus = (pollResult.project.status || 'pending').toLowerCase()
+                if (pollStatus !== 'loading') {
+                  if (pollInterval) clearInterval(pollInterval)
+
+                  // Update project state to remove the badge
+                  let finalStatus = pollStatus
+                  if (finalStatus === 'pending' || finalStatus === 'waiting') {
+                    finalStatus = 'pending'
+                  } else if (finalStatus === 'processing') {
+                    finalStatus = 'processing'
+                  }
+
+                  setProject(prev => prev ? {
+                    ...prev,
+                    status: finalStatus as 'loading' | 'pending' | 'processing' | 'completed' | 'error'
+                  } : null)
+
+                  // Final fetch to ensure we have all files
+                  await fetchFiles(true)
+                }
+              }
+            }, 1500) // Poll every 1.5 seconds for smooth updates
+          }
         } else {
           console.error('Failed to load project:', result.error)
         }
@@ -99,8 +135,9 @@ export default function ProjectDetailSection() {
 
     return () => {
       cancelled = true
+      if (pollInterval) clearInterval(pollInterval)
     }
-  }, [projectId, getProject])
+  }, [projectId, getProject, fetchFiles])
 
   // Reset to first page when tab/filter changes
   useEffect(() => {
@@ -230,15 +267,16 @@ export default function ProjectDetailSection() {
     }
   }
 
-  // Only show full loading state if we're loading AND not processing
-  // If we are processing, we want to show the table with skeletons
-  // We also need to wait for project to load so we know the expected file count
-  const filesTableLoading = (filesLoading || projectLoading) && !hasProcessingFiles
+  // Show loading skeleton if:
+  // 1. Files are loading OR project is loading
+  // 2. AND we don't have any files yet (prevents flash of empty table)
+  // 3. AND we're not currently processing (show real-time updates during processing)
+  const filesTableLoading = (filesLoading || projectLoading || audioFiles.length === 0) && !hasProcessingFiles
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 sm:px-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
             <Link href="/dashboard" className="hover:text-text transition-colors">
@@ -248,10 +286,10 @@ export default function ProjectDetailSection() {
             {projectLoading ? (
               <Skeleton className="h-4 w-24" />
             ) : (
-              <span className="text-text">{project?.name || 'Unnamed Project'}</span>
+              <span className="text-text truncate max-w-[200px]">{project?.name || 'Unnamed Project'}</span>
             )}
           </div>
-          <h1 className="text-3xl font-serif text-text">
+          <h1 className="text-2xl sm:text-3xl font-serif text-text">
             {projectLoading ? (
               <Skeleton className="h-8 w-48" />
             ) : (
@@ -260,69 +298,55 @@ export default function ProjectDetailSection() {
               </BrushUnderline>
             )}
           </h1>
-          {/* <p className="text-muted-foreground mb-6">You haven&apos;t uploaded any audio files yet.</p> */}
         </div>
-
-        <div className="flex items-center gap-3">
-          {/* <Button
-            size="sm"
-            className="bg-text text-bg hover:bg-text/90"
-            asChild
-          >
-            <Link href={`/dashboard/projects/${projectId}/upload`}>
-              <Upload className="w-4 h-4 mr-2" />
-              Upload Audio
-            </Link>
-          </Button> */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <button className="p-2 rounded-md transition-colors border border-dashed hover:text-text border-muted-foreground/30 hover:border-muted-foreground/50">
             <Link href={`/dashboard/projects/${projectId}/upload`}>
-
               <Upload className="w-4 h-4" />
             </Link>
           </button>
 
-          <div className="flex items-center gap-2">
-            {!allFilesCompleted && (
-              <span className="text-xs text-muted-foreground bg-muted px-2 lg:py-2 sm:py-1 rounded-md">
-                {completedFiles}/{audioFiles.length} completed
-              </span>
-            )}
-            <Button
-              size="sm"
-              className="bg-accent text-text hover:bg-accent/90"
-              asChild={allFilesCompleted}
-              disabled={!allFilesCompleted}
-              title={!allFilesCompleted ? 'All files must be completed before exporting' : ''}
-            >
-              {allFilesCompleted ? (
-                <Link href={`/dashboard/projects/${projectId}/export`}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Export Dataset
-                </Link>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-2" />
-                  Export Dataset
-                </>
-              )}
-            </Button>
-          </div>
+          {!allFilesCompleted && (
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 sm:py-2 rounded-md whitespace-nowrap">
+              {completedFiles}/{audioFiles.length} completed
+            </span>
+          )}
+
+          <Button
+            size="sm"
+            variant="outline"
+            className="whitespace-nowrap"
+            onClick={() => window.location.href = `/dashboard/projects/${projectId}/export`}
+            disabled={completedFiles === 0}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Export Dataset</span>
+            <span className="sm:hidden">Export</span>
+          </Button>
         </div>
       </div>
 
       {/* Audio Files List */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-text">Audio Files</h2>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold text-text">Audio Files</h2>
+            {project?.status === 'loading' && (
+              <span className="inline-flex items-center gap-2 px-3 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                <div className="animate-spin h-3 w-3 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                Extracting... ({audioFiles.length})
+              </span>
+            )}
+          </div>
           <Button
             size="sm"
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
             onClick={handleProcessTranscription}
             disabled={hasProcessingFiles || !hasPendingFiles}
           >
             {hasProcessingFiles ? (
               <>
-                <div className="animate-spin bg-accent rounded-full h-4 w-4 border-b-2 border-text mr-2"></div>
+                <div className="animate-spin bg-accent rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
                 Processing...
               </>
             ) : (
@@ -377,18 +401,7 @@ export default function ProjectDetailSection() {
         </div>
 
         <div className="flex-1 min-h-0 overflow-hidden grid" style={{ gridTemplateRows: '1fr auto' }}>
-          {/* Debug logging */}
-          {(() => {
-            console.log('[ProjectDetail] Render state:', {
-              filesLoading,
-              hasProcessingFiles,
-              projectStatus: project?.status,
-              audioFilesLength: audioFiles.length,
-              expectedFiles: project?.audioFiles,
-              filesTableLoading
-            })
-            return null
-          })()}
+
 
           <AudioFilesTable
             files={paginatedFiles as AudioFile[]}

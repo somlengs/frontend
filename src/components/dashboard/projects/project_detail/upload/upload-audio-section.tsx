@@ -21,10 +21,8 @@ export default function UploadAudioSection() {
   const processFiles = (files: File[]) => {
     // Check file size limits
     const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB per file
-    const MAX_TOTAL_SIZE = 500 * 1024 * 1024 // 500MB total
     const MAX_FILES = 100 // Maximum number of files
 
-    let totalSize = uploadedFiles.reduce((sum, file) => sum + file.size, 0)
     const newFiles: File[] = []
     const errors: string[] = []
 
@@ -32,12 +30,6 @@ export default function UploadAudioSection() {
       // Check individual file size
       if (file.size > MAX_FILE_SIZE) {
         errors.push(`${file.name}: File too large (max 50MB)`)
-        continue
-      }
-
-      // Check total size limit
-      if (totalSize + file.size > MAX_TOTAL_SIZE) {
-        errors.push(`${file.name}: Total upload size would exceed 500MB`)
         continue
       }
 
@@ -57,7 +49,6 @@ export default function UploadAudioSection() {
       }
 
       newFiles.push(file)
-      totalSize += file.size
     }
 
     // Show errors if any
@@ -189,30 +180,10 @@ export default function UploadAudioSection() {
                     Selected Files ({uploadedFiles.length}/100)
                   </span>
                   <span className="text-muted-foreground">
-                    {(uploadedFiles.reduce((sum, file) => sum + file.size, 0) / 1024 / 1024).toFixed(1)}MB / 500MB
+                    {(uploadedFiles.reduce((sum, file) => sum + file.size, 0) / 1024 / 1024).toFixed(1)}MB
                   </span>
                 </div>
-                <div className="w-full bg-muted rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all duration-300 ${(uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) > 0.8
-                      ? 'bg-red-500'
-                      : (uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) > 0.6
-                        ? 'bg-yellow-500'
-                        : 'bg-primary'
-                      }`}
-                    style={{
-                      width: `${Math.min(
-                        (uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) * 100,
-                        100
-                      )}%`
-                    }}
-                  ></div>
-                </div>
-                {(uploadedFiles.reduce((sum, file) => sum + file.size, 0) / (500 * 1024 * 1024)) > 0.8 && (
-                  <p className="text-sm text-red-600">
-                    ⚠️ Approaching upload limit (500MB max)
-                  </p>
-                )}
+                {/* Progress bar removed - no size limit */}
               </div>
             )}
 
